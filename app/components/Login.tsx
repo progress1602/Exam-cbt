@@ -35,10 +35,12 @@ const LoginPage = () => {
         {/* Right side - Login form */}
         <div className="w-full md:w-1/2 p-8">
           <div className="h-full flex flex-col justify-center">
-            <div className="mb-8">
+            <div className="mb-8 ">
               <h1 className="text-3xl font-bold text-gray-800 mb-1">Exam Practice With Ease</h1>
               <h2 className="text-2xl font-semibold text-gray-800 mb-4 md:flex md:items-center md:justify-center">Sign in to your account.</h2>
-             
+
+             <input type="text" placeholder='Email' className='w-full h-10 px-4 rounded-xl border border-gray-400'/>
+             <input type="text" placeholder='Password' className='w-full h-10 px-4 mt-6 rounded-xl border border-gray-400'/>
             </div>
             
             <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
