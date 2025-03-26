@@ -1,17 +1,47 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Moon, Sun, Eye, Calculator, Edit, RotateCcw } from 'lucide-react';
 import domtoimage from 'dom-to-image';
+import ReactMarkdown from 'react-markdown';
 import FloatingCalculator from './FloatingCalculator';
+import SkeletonLoader from './SkeletonLoader';
 
 type Scores = { [key: string]: number };
-interface Question { id: number; question: string; options: string[] }
+interface Question { id: string; question: string; options: string[] }
+interface SubjectScore { examSubject: string; score: number }
+interface FinishExamResponse {
+  sessionId: number;
+  subjectScores: SubjectScore[];
+  totalScore: number;
+  isCompleted: boolean;
+  timeSpent: string;
+}
 
-const EnhancedScoreGridModal = ({ isOpen, onClose, scores }: { isOpen: boolean, onClose: () => void, scores: Scores }) => {
-  const calculateTotal = () => Object.values(scores).reduce((sum, score) => sum + score, 0);
-  const calculatePercentage = () => Math.round((calculateTotal() / (Object.keys(scores).length * 100)) * 100);
+const normalizeSubjectName = (subject: string) => subject.trim().toUpperCase();
+
+const EnhancedScoreGridModal = ({
+  isOpen,
+  onClose,
+  subjectScores,
+  totalScore,
+  timeSpent,
+  selectedSubjects,
+  startJambExam,
+  resetQuizState,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  subjectScores: SubjectScore[];
+  totalScore: number;
+  timeSpent: string;
+  selectedSubjects: string[];
+  startJambExam: () => Promise<void>;
+  resetQuizState: () => void; // Simplified to always reset to 1
+}) => {
+  const router = useRouter();
+  const calculatePercentage = () => Math.round((totalScore / (subjectScores.length * 100)) * 100);
   const getGradeColor = (score: number) => {
     if (score >= 90) return "bg-green-100 text-green-800";
     if (score >= 70) return "bg-blue-100 text-blue-800";
@@ -44,6 +74,16 @@ const EnhancedScoreGridModal = ({ isOpen, onClose, scores }: { isOpen: boolean, 
     });
   };
 
+  const handleRewrite = async () => {
+    resetQuizState(); // Always reset to question 1
+    await startJambExam();
+    onClose();
+  };
+
+  const handleStartOver = () => {
+    router.push('/exam');
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -53,19 +93,19 @@ const EnhancedScoreGridModal = ({ isOpen, onClose, scores }: { isOpen: boolean, 
           <div id="score-section">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">Progress Henry, <br /> <span className='font-medium text-2xl'>2025 Jamb Score</span></h2>
-              <p className="font-bold"><span className="text-red-500 font-bold">Total Score : </span><br /><span className='text-2xl'>{calculateTotal()}/400</span></p>
+              <p className="font-bold"><span className="text-red-500 font-bold">Total Score : </span><br /><span className='text-2xl'>{totalScore}/80</span></p>
             </div>
             <div className="mb-6 rounded-lg overflow-hidden shadow-inner">
               <div className="grid grid-cols-12 bg-gray-800 text-white font-medium">
                 <div className="col-span-6 p-3 flex items-center">Subject</div>
                 <div className="col-span-6 p-3 flex items-center justify-center">Score</div>
               </div>
-              {Object.entries(scores).map(([subject, score], index) => (
-                <div key={subject} className={`grid grid-cols-12 border-b border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                  <div className="col-span-6 p-3 flex items-center font-medium text-gray-700">{subject}</div>
+              {subjectScores && subjectScores.map(({ examSubject, score }, index) => (
+                <div key={examSubject} className={`grid grid-cols-12 border-b border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                  <div className="col-span-6 p-3 flex items-center font-medium text-gray-700">{normalizeSubjectName(examSubject)}</div>
                   <div className="col-span-6 p-3 flex justify-center">
                     <div className={`px-3 py-2 border rounded-lg text-center ${getGradeColor(score)} font-semibold`}>
-                      {score}<span className="ml-1 text-gray-400">/100</span>
+                      {score}<span className="ml-1 text-gray-400">/20</span>
                     </div>
                   </div>
                 </div>
@@ -73,7 +113,7 @@ const EnhancedScoreGridModal = ({ isOpen, onClose, scores }: { isOpen: boolean, 
             </div>
             <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="grid grid-cols-2 p-4">
-                <div><div className="text-sm text-gray-500 mb-1">Time Spent</div><div className="text-2xl font-bold">1hr 2min 15sec</div></div>
+                <div><div className="text-sm text-gray-500 mb-1">Time Spent</div><div className="text-2xl font-bold">{timeSpent}</div></div>
               </div>
               <div className="px-4 pb-4"><div className="w-full bg-gray-200 rounded-full h-2.5"><div className="h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-green-500" style={{ width: `${calculatePercentage()}%` }}></div></div></div>
             </div>
@@ -81,8 +121,8 @@ const EnhancedScoreGridModal = ({ isOpen, onClose, scores }: { isOpen: boolean, 
         </div>
         <button onClick={handleDownload} className="underline decoration-2 decoration-black h-10 font-medium mb-4">Download Result</button>
         <div id="button-section" className="p-6 pt-0 flex justify-between gap-4 shrink-0">
-          <button className="flex-1 bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 flex items-center justify-center font-medium shadow-md"><Edit size={20} className="mr-2" />Rewrite</button>
-          <button onClick={onClose} className="flex-1 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 flex items-center justify-center font-medium shadow-md"><RotateCcw size={20} className="mr-2" />Start Over</button>
+          <button onClick={handleRewrite} className="flex-1 bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 flex items-center justify-center font-medium shadow-md"><Edit size={20} className="mr-2" />Rewrite</button>
+          <button onClick={handleStartOver} className="flex-1 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 flex items-center justify-center font-medium shadow-md"><RotateCcw size={20} className="mr-2" />Start Over</button>
         </div>
       </div>
     </div>
@@ -91,9 +131,11 @@ const EnhancedScoreGridModal = ({ isOpen, onClose, scores }: { isOpen: boolean, 
 
 const Quiz = () => {
   const searchParams = useSearchParams();
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const router = useRouter();
+  const [timeLeft, setTimeLeft] = useState<string>("01:30:00");
   const [currentQuestion, setCurrentQuestion] = useState(1);
   const [answeredQuestions, setAnsweredQuestions] = useState<{ [key: number]: string }>({});
+  const [storedAnswers, setStoredAnswers] = useState<{ questionId: string; answer: string }[]>([]);
   const [hideInstructions, setHideInstructions] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -105,15 +147,17 @@ const Quiz = () => {
   const [error, setError] = useState<string | null>(null);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [questionsBySubject, setQuestionsBySubject] = useState<{ [key: string]: Question[] }>({});
-  const [scores, setScores] = useState<Scores>({});
+  const [subjectScores, setSubjectScores] = useState<SubjectScore[]>([]);
+  const [totalScore, setTotalScore] = useState<number>(0);
+  const [timeSpent, setTimeSpent] = useState<string>('');
 
-  const selectedSubjects = JSON.parse(searchParams.get('subjects') || '[]');
+  const selectedSubjects = JSON.parse(searchParams.get('subjects') || '[]').map(normalizeSubjectName);
   const selectedYear = searchParams.get('year') || '2023';
 
   const startJambExam = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://exam-pl2x.onrender.com/graphql', {
+      const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -122,7 +166,6 @@ const Quiz = () => {
               startJambExam(subjects: $subjects, examYear: $examYear) {
                 id
                 subjects
-                currentSubject
                 remainingTime
               }
             }
@@ -132,17 +175,18 @@ const Quiz = () => {
       });
 
       const result = await response.json();
-      console.log('StartJambExam Response:', result);
-
       if (result.errors) throw new Error(result.errors[0].message);
 
       const examData = result.data.startJambExam;
-      setTimeLeft(examData.remainingTime);
+      setTimeLeft("01:30:00");
       setExamId(examData.id);
-      const fetchedSubjects = examData.subjects.map((s: string) => s.trim().toUpperCase());
+      const fetchedSubjects = examData.subjects.map(normalizeSubjectName);
       setSubjects(fetchedSubjects);
-      setActiveSubject(examData.currentSubject.trim().toUpperCase());
-      await fetchQuestions(fetchedSubjects);
+      
+      const defaultActiveSubject = fetchedSubjects[0] || '';
+      setActiveSubject(defaultActiveSubject);
+
+      await fetchQuestions(fetchedSubjects, examData.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start exam');
       console.error('StartJambExam Error:', err);
@@ -151,100 +195,207 @@ const Quiz = () => {
     }
   };
 
-  const fetchQuestions = async (subjectsToFetch: string[]) => {
+  const fetchQuestions = async (subjectsToFetch: string[], sessionId: string) => {
     try {
       const groupedQuestions: { [key: string]: Question[] } = {};
       for (const subject of subjectsToFetch) {
-        const response = await fetch('https://exam-pl2x.onrender.com/graphql', {
+        const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query: `
               query FetchJambSubjectQuestions($sessionId: Int!) {
                 fetchJambSubjectQuestions(sessionId: $sessionId) {
-                  id
-                  question
-                  options
+                  subject
+                  questions {
+                    id
+                    question
+                    options
+                  }
                 }
               }
             `,
-            variables: { sessionId: 3 },
+            variables: { sessionId: parseInt(sessionId) },
           }),
         });
 
         const result = await response.json();
-        console.log(`FetchJambSubjectQuestions Response for ${subject}:`, result);
-
         if (result.errors) throw new Error(result.errors[0].message);
         if (!result.data || !result.data.fetchJambSubjectQuestions) throw new Error(`No questions returned for ${subject}`);
 
-        groupedQuestions[subject] = result.data.fetchJambSubjectQuestions;
+        const subjectData = result.data.fetchJambSubjectQuestions.find((item: any) => normalizeSubjectName(item.subject) === subject);
+        groupedQuestions[subject] = subjectData?.questions || [];
+        if (!subjectData?.questions?.length) {
+          console.warn(`No questions found for subject: ${subject}`);
+        }
       }
       setQuestionsBySubject(groupedQuestions);
-      console.log('Grouped Questions:', groupedQuestions);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch questions');
       console.error('FetchQuestions Error:', err);
     }
   };
 
+  const finishJambExam = async (sessionId: string, answers: { questionId: string; answer: string }[]) => {
+    try {
+      const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `
+            mutation FinishJambExam($sessionId: Int!, $answers: [AnswerInput!]!) {
+              finishJambExam(sessionId: $sessionId, answers: $answers) {
+                sessionId
+                subjectScores { examSubject, score }
+                totalScore
+                isCompleted
+                timeSpent
+              }
+            }
+          `,
+          variables: {
+            sessionId: parseInt(sessionId),
+            answers: answers.map(({ questionId, answer }) => ({
+              questionId,
+              answer: answer.toLowerCase(),
+            })),
+          },
+        }),
+      });
+
+      const result = await response.json();
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      const examResult: FinishExamResponse = result.data.finishJambExam;
+      setSubjectScores(
+        examResult.subjectScores.map((score) => ({
+          ...score,
+          examSubject: normalizeSubjectName(score.examSubject),
+        })) || []
+      );
+      setTotalScore(examResult.totalScore);
+      setTimeSpent(examResult.timeSpent);
+      return examResult.isCompleted;
+    } catch (err) {
+      console.error('FinishJambExam Error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to finish exam');
+      return false;
+    }
+  };
+
+  const normalizeTime = (time: string): string => {
+    if (!time || !time.includes(':')) return "00:00:00";
+    const parts = time.split(':').map(part => part.padStart(2, '0'));
+    while (parts.length < 3) parts.unshift('00');
+    const [hours, minutes, seconds] = parts;
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
   useEffect(() => {
     setIsMounted(true);
     const savedMode = localStorage.getItem('darkMode');
     setIsDarkMode(savedMode ? JSON.parse(savedMode) : false);
+    const savedAnswers = localStorage.getItem('quizAnswers');
+    if (savedAnswers) setStoredAnswers(JSON.parse(savedAnswers));
+    
+    setTimeLeft("01:30:00");
+
     if (selectedSubjects.length > 0) startJambExam();
   }, []);
 
   useEffect(() => {
-    if (isMounted && typeof window !== 'undefined') localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-  }, [isDarkMode, isMounted]);
+    if (isMounted && typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+      localStorage.setItem('quizAnswers', JSON.stringify(storedAnswers));
+    }
+  }, [isDarkMode, isMounted, storedAnswers]);
 
   useEffect(() => {
-    if (timeLeft === null || loading || timeLeft <= 0) return;
+    if (timeLeft === null || loading || timeLeft === "00:00:00") {
+      if (timeLeft === "00:00:00" && examId) {
+        finishJambExam(examId, storedAnswers).then((isCompleted) => {
+          if (isCompleted) {
+            setIsScoreModalOpen(true);
+            localStorage.removeItem('quizAnswers');
+            setStoredAnswers([]);
+          } else {
+            setError('Failed to complete the exam');
+          }
+        });
+      }
+      return;
+    }
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev === null || prev <= 0) {
+        if (!prev || prev === "00:00:00") {
           clearInterval(timer);
-          return 0;
+          return "00:00:00";
         }
-        return prev - 1;
+        const [hours, minutes, seconds] = prev.split(':').map(Number);
+        if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
+          console.error('Invalid time format:', prev);
+          clearInterval(timer);
+          return "00:00:00";
+        }
+        let totalSeconds = hours * 3600 + minutes * 60 + seconds;
+        if (totalSeconds <= 0) {
+          clearInterval(timer);
+          return "00:00:00";
+        }
+        totalSeconds -= 1;
+        const newHours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+        const newMinutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+        const newSeconds = (totalSeconds % 60).toString().padStart(2, '0');
+        return `${newHours}:${newMinutes}:${newSeconds}`;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, loading]);
+  }, [timeLeft, loading, examId, storedAnswers]);
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
-      const currentQs = questionsBySubject[activeSubject];
-      const thisQuestion = currentQs?.[currentQuestion - 1];
+      const currentQs = questionsBySubject[activeSubject] || [];
+      const thisQuestion = currentQs[currentQuestion - 1];
       if (!thisQuestion) return;
       const key = event.key;
-      if ((key === 'n' || key === 'N') && currentQuestion < (currentQs?.length || 0)) setCurrentQuestion(currentQuestion + 1);
+      if ((key === 'n' || key === 'N') && currentQuestion < currentQs.length) setCurrentQuestion(currentQuestion + 1);
       else if ((key === 'p' || key === 'P') && currentQuestion > 1) setCurrentQuestion(currentQuestion - 1);
-      else if (key === 'a' || key === 'A') handleAnswerSelect(thisQuestion.options[0]);
-      else if (key === 'b' || key === 'B') handleAnswerSelect(thisQuestion.options[1]);
-      else if (key === 'c' || key === 'C') handleAnswerSelect(thisQuestion.options[2]);
-      else if (key === 'd' || key === 'D') handleAnswerSelect(thisQuestion.options[3]);
+      else if (key === 'a' || key === 'A') handleAnswerSelect(thisQuestion.options[0], thisQuestion.id);
+      else if (key === 'b' || key === 'B') handleAnswerSelect(thisQuestion.options[1], thisQuestion.id);
+      else if (key === 'c' || key === 'C') handleAnswerSelect(thisQuestion.options[2], thisQuestion.id);
+      else if (key === 'd' || key === 'D') handleAnswerSelect(thisQuestion.options[3], thisQuestion.id);
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [currentQuestion, activeSubject, questionsBySubject]);
 
-  const formatTime = (seconds: number | null) => {
-    if (seconds === null) return 'Loading...';
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const formatTime = (time: string | null) => {
+    if (time === null) return 'Loading...';
+    return time;
   };
 
-  const handleAnswerSelect = (option: string) => {
-    setAnsweredQuestions({ ...answeredQuestions, [currentQuestion]: option });
+  const handleAnswerSelect = (option: string, questionId: string) => {
+    const optionIndex = currentQ.options.indexOf(option);
+    const answerLabel = ['a', 'b', 'c', 'd', 'e'][optionIndex];
+
+    setAnsweredQuestions(prev => ({ ...prev, [currentQuestion]: option }));
+    
+    setStoredAnswers(prev => {
+      const newAnswers = prev.filter(ans => ans.questionId !== questionId);
+      return [...newAnswers, { questionId, answer: answerLabel }];
+    });
+
+    const currentQs = questionsBySubject[activeSubject] || [];
+    if (currentQuestion < currentQs.length) {
+      setCurrentQuestion(currentQuestion + 1);
+    }
   };
 
   const goToNext = () => {
-    if (currentQuestion < (questionsBySubject[activeSubject]?.length || 0)) setCurrentQuestion(currentQuestion + 1);
+    const currentQs = questionsBySubject[activeSubject] || [];
+    if (currentQuestion < currentQs.length) setCurrentQuestion(currentQuestion + 1);
   };
 
   const goToPrev = () => {
@@ -258,20 +409,55 @@ const Quiz = () => {
   };
 
   const toggleMode = () => setIsDarkMode((prev) => !prev);
-  const handleSubjectChange = (subject: string) => { setActiveSubject(subject); setCurrentQuestion(1); setAnsweredQuestions({}); };
-  const handleSubmitClick = () => setIsConfirmModalOpen(true);
-  const handleProceed = () => {
-    setIsConfirmModalOpen(false);
-    setIsScoreModalOpen(true);
-    setScores(subjects.reduce((acc, subj, idx) => ({ ...acc, [subj]: [85, 78, 88, 92][idx] || 80 }), {}));
+  const handleSubjectChange = (subject: string) => { 
+    setActiveSubject(subject); 
+    setCurrentQuestion(1); 
+    setAnsweredQuestions({}); 
   };
+  const handleSubmitClick = () => setIsConfirmModalOpen(true);
+
+  const handleProceed = async () => {
+    if (!examId) {
+      console.error('No exam ID available');
+      return;
+    }
+    setIsConfirmModalOpen(false);
+    
+    const isCompleted = await finishJambExam(examId, storedAnswers);
+    if (isCompleted) {
+      setIsScoreModalOpen(true);
+      localStorage.removeItem('quizAnswers');
+      setStoredAnswers([]);
+    } else {
+      setError('Failed to complete the exam');
+    }
+  };
+
   const handleCancel = () => setIsConfirmModalOpen(false);
+
+  const resetQuizState = () => {
+    setLoading(true);
+    setAnsweredQuestions({});
+    setStoredAnswers([]);
+    setCurrentQuestion(1); // Always reset to 1
+    setExamId(null);
+    setSubjectScores([]);
+    setTotalScore(0);
+    setTimeSpent('');
+    setQuestionsBySubject({});
+    localStorage.removeItem('quizAnswers');
+    setLoading(false);
+  };
+
+  const handleQuestionClick = (questionNum: number) => {
+    setCurrentQuestion(questionNum);
+  };
 
   const currentQuestions = questionsBySubject[activeSubject] || [];
   const currentQ = currentQuestions[currentQuestion - 1];
 
   if (!isMounted) return null;
-  if (loading) return <div>Loading exam...</div>;
+  if (loading || !Object.keys(questionsBySubject).length) return <div className='min-h-screen w-full'><SkeletonLoader isDarkMode={false}/></div>;
   if (error) return <div>Error: {error}</div>;
   if (subjects.length === 0) return <div>No subjects selected</div>;
   if (!currentQuestions.length) return <div>No questions available for {activeSubject}</div>;
@@ -313,21 +499,30 @@ const Quiz = () => {
               <h2 className="text-xl font-bold mb-4">Confirm Submission</h2>
               <p className="mb-6">Do you want to submit your exam now?</p>
               <div className="flex justify-end space-x-4">
-                <button onClick={handleCancel} className={`px-4 py-2 rounded-lg ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-600 hover:bg-red-700 text-white'}`}>Cancel</button>
+                <button onClick={handleCancel} className={`px-4 py-2 rounded-lg ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600 text-white'}`}>Cancel</button>
                 <button onClick={handleProceed} className="bg-[#11479b] text-white px-4 py-2 rounded-lg hover:bg-[#0d3a7d]">Proceed</button>
               </div>
             </div>
           </div>
         )}
 
-        <EnhancedScoreGridModal isOpen={isScoreModalOpen} onClose={() => setIsScoreModalOpen(false)} scores={scores} />
+        <EnhancedScoreGridModal
+          isOpen={isScoreModalOpen}
+          onClose={() => setIsScoreModalOpen(false)}
+          subjectScores={subjectScores}
+          totalScore={totalScore}
+          timeSpent={timeSpent}
+          selectedSubjects={selectedSubjects}
+          startJambExam={startJambExam}
+          resetQuizState={resetQuizState}
+        />
 
         <div className="mx-auto max-w-6xl mt-32 md:max-w-4xl md:mt-10 lg:mx-auto lg:max-w-4xl lg:mt-10">
           <div className={`p-4 rounded-lg mb-4 ${isDarkMode ? 'bg-[#333333]' : 'bg-blue-100'}`}>
             <div className="flex justify-between items-center">
               <div>
                 <p className={`font-bold underline ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>instructions:</p>
-                {!hideInstructions && <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>No instruction</p>}
+                {!hideInstructions && <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Answer All Questions</p>}
               </div>
               <button className="text-blue-600 flex items-center dark:text-blue-400" onClick={() => setHideInstructions(!hideInstructions)}>
                 <Eye className="mr-1 w-5 h-5" />{hideInstructions ? 'Show instruction' : 'Hide instruction'}
@@ -341,7 +536,9 @@ const Quiz = () => {
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
                     <span className="bg-[#11479b] text-white rounded-full w-12 h-12 flex items-center justify-center mr-2 font-bold">{currentQuestion}</span>
-                    <p className={isDarkMode ? 'text-white' : 'text-gray-800'}>{currentQ.question}</p>
+                    <div className={isDarkMode ? 'text-white' : 'text-gray-800'}>
+                      <ReactMarkdown>{currentQ.question}</ReactMarkdown>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -352,7 +549,7 @@ const Quiz = () => {
                   return (
                     <button
                       key={option}
-                      onClick={() => handleAnswerSelect(option)}
+                      onClick={() => handleAnswerSelect(option, currentQ.id)}
                       className={`border rounded-lg p-4 py-3 h-12 text-left flex items-center ${
                         isDarkMode ? 'border-gray-700' : 'border-gray-300'
                       } ${
@@ -363,7 +560,8 @@ const Quiz = () => {
                           : 'bg-white'
                       } ${isDarkMode ? 'text-white' : 'text-gray-800'}`}
                     >
-                      <span className="mr-2 font-semibold">{optionLabel}.</span> {option}
+                      <span className="mr-2 font-semibold">{optionLabel}.</span>
+                      <ReactMarkdown>{option}</ReactMarkdown>
                     </button>
                   );
                 })}
@@ -373,12 +571,12 @@ const Quiz = () => {
         </div>
         <FloatingCalculator />
         <div className="flex justify-between items-center mt-28">
-          {/* Question Numbers Scroll Container */}
           <div className="max-w-[70vw] md:max-w-full overflow-x-auto scrollbar-hide hover:overflow-x-scroll md:overflow-x-visible">
             <div className="flex space-x-2">
               {currentQuestions.map((_, index) => (
                 <button
                   key={index + 1}
+                  onClick={() => handleQuestionClick(index + 1)}
                   className={`min-w-[2rem] h-8 ${getButtonColor(index + 1)} text-white rounded-full flex items-center justify-center text-sm font-medium`}
                 >
                   {index + 1}

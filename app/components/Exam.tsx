@@ -10,6 +10,11 @@ import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import Image from 'next/image';
 
+// Utility function to capitalize first letter
+const capitalizeFirstLetter = (str: string) => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 const ExamGrid = () => {
   const [isJambModalOpen, setIsJambModalOpen] = useState(false);
   const [isWaecModalOpen, setIsWaecModalOpen] = useState(false);
@@ -20,13 +25,13 @@ const ExamGrid = () => {
   const [jambYears, setJambYears] = useState<string[]>([]);
 
   const waecSubjects = [
-    "English Language", "Mathematics", "Physics", "Chemistry", "Biology",
-    "Literature", "Government", "Economics", "Geography", "Accounting",
-    "Commerce", "Agricultural Science", "History", "Civic Education", "Visual Art"
+    "english language", "mathematics", "physics", "chemistry", "biology",
+    "literature", "government", "economics", "geography", "accounting",
+    "commerce", "agricultural science", "history", "civic education", "visual art"
   ];
 
   const waecYears = Array.from({ length: 20 }, (_, i) => (2024 - i).toString());
-  const API_URL = "https://exam-pl2x.onrender.com/graphql";
+  const API_URL = "https://exam-1-iev5.onrender.com/graphql";
 
   useEffect(() => {
     const fetchJambSubjects = async () => {
@@ -57,7 +62,7 @@ const ExamGrid = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            query: `query { years(examType: "jamb", examSubject: "English Language") }`,
+            query: `query { years(examType: "jamb", examSubject: "english language") }`,
           }),
         });
 
@@ -78,7 +83,7 @@ const ExamGrid = () => {
   }, []);
 
   const handleSubjectChange = (subject: string, isJamb: boolean) => {
-    if (subject === "English Language") return;
+    if (subject === "english language") return;
 
     setSelectedSubjects(prev => {
       const maxSubjects = isJamb ? 4 : 9;
@@ -107,7 +112,7 @@ const ExamGrid = () => {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      toast.success(`Starting practice for ${selectedSubjects.join(", ")} - ${selectedYear}`);
+      toast.success(`Starting practice for ${selectedSubjects.map(capitalizeFirstLetter).join(", ")} - ${selectedYear}`);
     }, 2000);
   };
 
@@ -145,7 +150,7 @@ const ExamGrid = () => {
             <DialogHeader>
               <DialogTitle className="text-jamb">Select JAMB Subjects and Year</DialogTitle>
             </DialogHeader>
-            <ScrollArea className="pr-4 max-h-[calc(90vh-120px)] scrollbar-none">
+            <ScrollArea className="pr-4 max-h-[calc(90vh-180px)] scrollbar-none">
               <div className="grid gap-6 pb-4">
                 <div>
                   <h3 className="text-sm font-medium mb-3">Subjects (Select 3 subjects + English)</h3>
@@ -159,12 +164,12 @@ const ExamGrid = () => {
                             id={`jamb-${subject.id}`}
                             checked={selectedSubjects.includes(subject.name)}
                             onCheckedChange={() => handleSubjectChange(subject.name, true)}
-                            disabled={subject.name === "English Language"}
-                            className={`data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 ${subject.name === "English Language" ? "bg-blue-500 text-white border-blue-500" : ""}`}
+                            disabled={subject.name.toLowerCase() === "english language"}
+                            className={`data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 ${subject.name.toLowerCase() === "english language" ? "bg-blue-500 text-white border-blue-500" : ""}`}
                           />
                           <Label htmlFor={`jamb-${subject.id}`} className="text-sm">
-                            {subject.name}
-                            {subject.name === "English Language" && " (Compulsory)"}
+                            {capitalizeFirstLetter(subject.name)}
+                            {subject.name.toLowerCase() === "english language" && " (Compulsory)"}
                           </Label>
                         </div>
                       ))}
@@ -174,46 +179,46 @@ const ExamGrid = () => {
 
                 <div>
                   <h3 className="text-sm font-medium mb-3">Select Year</h3>
-                  <ScrollArea className="h-40 rounded-md border scrollbar-none">
-                    <div className="p-4">
+                  <div className="p-4 border rounded-md">
+                    <div className="grid grid-cols-3 gap-2">
                       {jambYears.length === 0 ? (
                         <p className="text-sm text-gray-500">Loading years...</p>
                       ) : (
-                        <div className="grid grid-cols-3 gap-2">
-                          {jambYears.map((year) => (
-                            <Button
-                              key={year}
-                              variant="outline"
-                              className={`text-sm ${selectedYear === year ? 'bg-blue-500 hover:bg-blue-600 text-white' : ''}`}
-                              onClick={() => handleYearSelect(year)}
-                            >
-                              {year}
-                            </Button>
-                          ))}
-                        </div>
+                        jambYears.map((year) => (
+                          <Button
+                            key={year}
+                            variant="outline"
+                            className={`text-sm ${selectedYear === year ? 'bg-blue-500 hover:bg-blue-600 text-white' : ''}`}
+                            onClick={() => handleYearSelect(year)}
+                          >
+                            {year}
+                          </Button>
+                        ))
                       )}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
-                <Link
-                  href={{
-                    pathname: '/test',
-                    query: {
-                      subjects: JSON.stringify(selectedSubjects),
-                      year: selectedYear || '',
-                    },
-                  }}
-                >
-                  <Button
-                    className="bg-blue-500 hover:bg-blue-600 w-full"
-                    disabled={isLoading || jambSubjects.length === 0 || jambYears.length === 0 || !selectedYear}
-                    onClick={handleStartPractice}
-                  >
-                    {isLoading ? 'Loading...' : 'Start Practice'}
-                  </Button>
-                </Link>
               </div>
             </ScrollArea>
+            <div className="fixed bottom-4 left-0 right-0 px-6">
+              <Link
+                href={{
+                  pathname: '/test',
+                  query: {
+                    subjects: JSON.stringify(selectedSubjects),
+                    year: selectedYear || '',
+                  },
+                }}
+              >
+                <Button
+                  className="bg-blue-500 hover:bg-blue-600 w-full"
+                  disabled={isLoading || jambSubjects.length === 0 || jambYears.length === 0 || !selectedYear}
+                  onClick={handleStartPractice}
+                >
+                  {isLoading ? 'Loading...' : 'Start Practice'}
+                </Button>
+              </Link>
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -222,7 +227,7 @@ const ExamGrid = () => {
             <DialogHeader>
               <DialogTitle className="text-waec">Select WAEC Subjects and Year</DialogTitle>
             </DialogHeader>
-            <ScrollArea className="pr-4 max-h-[calc(90vh-120px)] scrollbar-none">
+            <ScrollArea className="pr-4 max-h-[calc(90vh-180px)] scrollbar-none">
               <div className="grid gap-6 pb-4">
                 <div>
                   <h3 className="text-sm font-medium mb-3">Subjects (Select up to 8 subjects + English)</h3>
@@ -233,12 +238,12 @@ const ExamGrid = () => {
                           id={`waec-${subject}`}
                           checked={selectedSubjects.includes(subject)}
                           onCheckedChange={() => handleSubjectChange(subject, false)}
-                          disabled={subject === "English Language"}
-                          className={`data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 ${subject === "English Language" ? "bg-green-500 text-white border-green-500" : ""}`}
+                          disabled={subject === "english language"}
+                          className={`data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 ${subject === "english language" ? "bg-green-500 text-white border-green-500" : ""}`}
                         />
                         <Label htmlFor={`waec-${subject}`} className="text-sm">
-                          {subject}
-                          {subject === "English Language" && " (Compulsory)"}
+                          {capitalizeFirstLetter(subject)}
+                          {subject === "english language" && " (Compulsory)"}
                         </Label>
                       </div>
                     ))}
@@ -247,42 +252,42 @@ const ExamGrid = () => {
 
                 <div>
                   <h3 className="text-sm font-medium mb-3">Select Year</h3>
-                  <ScrollArea className="h-40 rounded-md border scrollbar-none">
-                    <div className="p-4">
-                      <div className="grid grid-cols-3 gap-2">
-                        {waecYears.map((year) => (
-                          <Button
-                            key={year}
-                            variant="outline"
-                            className={`text-sm ${selectedYear === year ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}
-                            onClick={() => handleYearSelect(year)}
-                          >
-                            {year}
-                          </Button>
-                        ))}
-                      </div>
+                  <div className="p-4 border rounded-md">
+                    <div className="grid grid-cols-3 gap-2">
+                      {waecYears.map((year) => (
+                        <Button
+                          key={year}
+                          variant="outline"
+                          className={`text-sm ${selectedYear === year ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}
+                          onClick={() => handleYearSelect(year)}
+                        >
+                          {year}
+                        </Button>
+                      ))}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
-                <Link
-                  href={{
-                    pathname: '/test',
-                    query: {
-                      subjects: JSON.stringify(selectedSubjects),
-                      year: selectedYear || '',
-                    },
-                  }}
-                >
-                  <Button
-                    className="bg-green-500 hover:bg-green-600 w-full"
-                    disabled={isLoading || !selectedYear}
-                    onClick={handleStartPractice}
-                  >
-                    {isLoading ? 'Loading...' : 'Start Practice'}
-                  </Button>
-                </Link>
               </div>
             </ScrollArea>
+            <div className="fixed bottom-4 left-0 right-0 px-6">
+              <Link
+                href={{
+                  pathname: '/test',
+                  query: {
+                    subjects: JSON.stringify(selectedSubjects),
+                    year: selectedYear || '',
+                  },
+                }}
+              >
+                <Button
+                  className="bg-green-500 hover:bg-green-600 w-full"
+                  disabled={isLoading || !selectedYear}
+                  onClick={handleStartPractice}
+                >
+                  {isLoading ? 'Loading...' : 'Start Practice'}
+                </Button>
+              </Link>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
