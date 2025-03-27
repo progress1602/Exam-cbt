@@ -14,5 +14,5 @@ export function middleware(req: NextRequest) {
 
 // Apply middleware to protected routes
 export const config = {
-    matcher: [], // Add your protected routes here
+    matcher: ["/exam/:path*", "/test/:path*"], // Add your protected routes here
 };
