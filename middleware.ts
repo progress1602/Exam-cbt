@@ -2,17 +2,26 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
-    const token = req.cookies.get("token")?.value; // Assuming you store JWT token in cookies
+  const authHeader = req.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
 
-    // If user is not authenticated, redirect to login
-    if (!token && req.nextUrl.pathname !== "/login") {
-        return NextResponse.redirect(new URL("/login", req.url));
-    }
+  // Define public routes
+  const publicRoutes = ["/login", "/signup"];
 
-    return NextResponse.next();
+  // Check if the current path is a public route
+  const isPublicRoute = publicRoutes.includes(req.nextUrl.pathname);
+
+  // If no token and not a public route, redirect to login
+  if (!token && !isPublicRoute) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
+  return NextResponse.next();
 }
 
-// Apply middleware to protected routes
+// Apply middleware to all routes except static files and public routes
 export const config = {
-    matcher: ["/exam/:path*", "/test/:path*"], // Add your protected routes here
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|login|signup).*)",
+  ],
 };
