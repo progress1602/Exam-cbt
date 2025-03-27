@@ -10,6 +10,7 @@ import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import Image from 'next/image';
 
+
 // Utility function to capitalize first letter
 const capitalizeFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -165,6 +166,7 @@ const ExamGrid = () => {
   };
 
   return (
+    
     <div className="min-h-screen bg-[#1f1f1f]">
       <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       <div className="flex justify-center items-center text-white text-3xl mx-auto max-w-80 md:mx-auto md:max-w-6xl md:text-4xl lg:text-4xl font-bold py-20">
@@ -344,6 +346,7 @@ const ExamGrid = () => {
         </Dialog>
       </div>
     </div>
+    
   );
 };
 

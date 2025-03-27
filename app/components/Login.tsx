@@ -19,7 +19,7 @@ const LoginPage = () => {
     setError("");
 
     const query = `
-      mutation LoginStudent($input: LoginStudentInput!) {
+      mutation LoginStudent($input: LoginInput!) {
         loginStudent(input: $input) {
           success
           message
@@ -45,7 +45,7 @@ const LoginPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-        },
+        }, // No token for login request
         body: JSON.stringify({ query, variables }),
       });
 
@@ -101,11 +101,11 @@ const LoginPage = () => {
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>
                   <label className="mb-2 ml-1 block text-gray-700">
-                     Username
+                    Email or Username
                   </label>
                   <input
                     type="text"
-                    placeholder="username"
+                    placeholder="Enter your email or username"
                     className="w-full h-10 px-4 rounded-xl border border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

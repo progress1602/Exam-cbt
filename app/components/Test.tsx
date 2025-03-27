@@ -7,6 +7,7 @@ import domtoimage from 'dom-to-image';
 import ReactMarkdown from 'react-markdown';
 import FloatingCalculator from './FloatingCalculator';
 import SkeletonLoader from './SkeletonLoader';
+import AuthGuard from '../components/AuthGuard';
 
 type Scores = { [key: string]: number };
 interface Question { id: string; question: string; options: string[] }
@@ -127,6 +128,7 @@ const EnhancedScoreGridModal = ({
   if (!isOpen) return null;
 
   return (
+    <AuthGuard>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-10 backdrop-blur-sm">
       <div className="max-w-md w-full mx-4 bg-white/80 rounded-xl shadow-2xl border border-gray-100 flex flex-col max-h-[90vh]">
         <div className="flex-1 overflow-y-auto p-6">
@@ -166,6 +168,7 @@ const EnhancedScoreGridModal = ({
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 };
 
@@ -558,6 +561,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
   if (!currentQuestions.length) return <div>No questions available for {activeSubject}</div>;
 
   return (
+    <AuthGuard>
     <div className={`min-h-screen flex items-center justify-center p-4 ${isDarkMode ? 'bg-[#191919] dark' : 'bg-gray-100'}`}>
       <div className="w-full rounded-lg p-6">
         <div className={`fixed top-3 left-0 right-0 z-10 ${isDarkMode ? 'bg-[#191919]/80' : 'bg-gray-100/80'} backdrop-blur-md`}>
@@ -686,6 +690,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 };
 
