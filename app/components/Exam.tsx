@@ -23,6 +23,7 @@ const ExamGrid = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [jambSubjects, setJambSubjects] = useState<{ id: string; name: string }[]>([]);
   const [jambYears, setJambYears] = useState<string[]>([]);
+  const [user, setUser] = useState<{ firstName: string; lastName: string } | null>(null); // State for user data
 
   const waecSubjects = [
     "english language", "mathematics", "physics", "chemistry", "biology",
@@ -34,11 +35,54 @@ const ExamGrid = () => {
   const API_URL = "https://exam-1-iev5.onrender.com/graphql";
 
   useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            ...(localStorage.getItem('token') && { 
+              'Authorization': `Bearer ${localStorage.getItem('token')}` 
+            }),
+          },
+          body: JSON.stringify({
+            query: `
+              query {
+                me {
+                  id
+                  firstName
+                  lastName
+                  createdAt
+                  updatedAt
+                }
+              }
+            `,
+          }),
+        });
+
+        const result = await response.json();
+        if (result.data && result.data.me) {
+          setUser({
+            firstName: result.data.me.firstName,
+            lastName: result.data.me.lastName,
+          });
+        } else {
+          toast.error("Failed to fetch user data");
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        toast.error("An error occurred while fetching user data");
+      }
+    };
+
     const fetchJambSubjects = async () => {
       try {
         const response = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          ...(localStorage.getItem('token') && { 
+            'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          }),
           body: JSON.stringify({
             query: `query { subjects(examType: "jamb") { id name } }`,
           }),
@@ -61,6 +105,9 @@ const ExamGrid = () => {
         const response = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          ...(localStorage.getItem('token') && { 
+            'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          }),
           body: JSON.stringify({
             query: `query { years(examType: "jamb", examSubject: "english language") }`,
           }),
@@ -78,6 +125,7 @@ const ExamGrid = () => {
       }
     };
 
+    fetchUserData(); // Fetch user data on mount
     fetchJambSubjects();
     fetchJambYears();
   }, []);
@@ -120,7 +168,11 @@ const ExamGrid = () => {
     <div className="min-h-screen bg-[#1f1f1f]">
       <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       <div className="flex justify-center items-center text-white text-3xl mx-auto max-w-80 md:mx-auto md:max-w-6xl md:text-4xl lg:text-4xl font-bold py-20">
-        HELLO PROGRESS YOU CAN START YOUR PRACTICE NOW
+        {user ? (
+          `HELLO ${user.firstName.toUpperCase()} ${user.lastName.toUpperCase()} YOU CAN START YOUR PRACTICE NOW`
+        ) : (
+          "HELLO PROGRESS YOU CAN START YOUR PRACTICE NOW" // Fallback while loading
+        )}
       </div>
       <div className="flex flex-col justify-center items-center md:flex-row space-y-6 md:space-y-0 md:space-x-8 p-4">
         <div

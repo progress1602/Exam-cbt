@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Moon, Sun, Eye, Calculator, Edit, RotateCcw } from 'lucide-react';
 import domtoimage from 'dom-to-image';
 import ReactMarkdown from 'react-markdown';
@@ -38,9 +38,49 @@ const EnhancedScoreGridModal = ({
   timeSpent: string;
   selectedSubjects: string[];
   startJambExam: () => Promise<void>;
-  resetQuizState: () => void; // Simplified to always reset to 1
+  resetQuizState: () => void;
 }) => {
   const router = useRouter();
+  const [userName, setUserName] = useState(''); // New state for user's name
+
+  // Fetch user data when component mounts
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        };
+
+        const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            query: `
+              query GetMe {
+                me {
+                  firstName
+                  lastName
+                }
+              }
+            `,
+          }),
+        });
+
+        const result = await response.json();
+        if (result.errors) throw new Error(result.errors[0].message);
+        const { firstName, lastName } = result.data.me;
+        setUserName(`${firstName} ${lastName}`);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setUserName('User'); // Fallback name
+      }
+    };
+
+    if (isOpen) fetchUserData();
+  }, [isOpen]);
+
   const calculatePercentage = () => Math.round((totalScore / (subjectScores.length * 100)) * 100);
   const getGradeColor = (score: number) => {
     if (score >= 90) return "bg-green-100 text-green-800";
@@ -75,7 +115,7 @@ const EnhancedScoreGridModal = ({
   };
 
   const handleRewrite = async () => {
-    resetQuizState(); // Always reset to question 1
+    resetQuizState();
     await startJambExam();
     onClose();
   };
@@ -92,7 +132,7 @@ const EnhancedScoreGridModal = ({
         <div className="flex-1 overflow-y-auto p-6">
           <div id="score-section">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Progress Henry, <br /> <span className='font-medium text-2xl'>2025 Jamb Score</span></h2>
+              <h2 className="text-xl font-bold text-gray-800">{userName}, <br /> <span className='font-medium text-2xl'>2025 Jamb Score</span></h2>
               <p className="font-bold"><span className="text-red-500 font-bold">Total Score : </span><br /><span className='text-2xl'>{totalScore}/80</span></p>
             </div>
             <div className="mb-6 rounded-lg overflow-hidden shadow-inner">
@@ -129,11 +169,10 @@ const EnhancedScoreGridModal = ({
   );
 };
 
-const Quiz = () => {
-  const searchParams = useSearchParams();
+const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefined, subjectsParam: string | string[] | undefined}) => {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState<string>("01:30:00");
-  const [currentQuestion, setCurrentQuestion] = useState(1);
+  const [currentQuestionsBySubject, setCurrentQuestionsBySubject] = useState<{ [key: string]: number }>({});
   const [answeredQuestions, setAnsweredQuestions] = useState<{ [key: number]: string }>({});
   const [storedAnswers, setStoredAnswers] = useState<{ questionId: string; answer: string }[]>([]);
   const [hideInstructions, setHideInstructions] = useState(false);
@@ -151,15 +190,23 @@ const Quiz = () => {
   const [totalScore, setTotalScore] = useState<number>(0);
   const [timeSpent, setTimeSpent] = useState<string>('');
 
-  const selectedSubjects = JSON.parse(searchParams.get('subjects') || '[]').map(normalizeSubjectName);
-  const selectedYear = searchParams.get('year') || '2023';
+  const selectedSubjects = JSON.parse(subjectsParam as string || '[]').map(normalizeSubjectName);
+  const selectedYear = yearParam || '2023';
 
   const startJambExam = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem('token');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           query: `
             mutation StartJambExam($subjects: [String!]!, $examYear: String!) {
@@ -197,11 +244,19 @@ const Quiz = () => {
 
   const fetchQuestions = async (subjectsToFetch: string[], sessionId: string) => {
     try {
+      const token = localStorage.getItem('token');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const groupedQuestions: { [key: string]: Question[] } = {};
       for (const subject of subjectsToFetch) {
         const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             query: `
               query FetchJambSubjectQuestions($sessionId: Int!) {
@@ -238,9 +293,17 @@ const Quiz = () => {
 
   const finishJambExam = async (sessionId: string, answers: { questionId: string; answer: string }[]) => {
     try {
+      const token = localStorage.getItem('token');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           query: `
             mutation FinishJambExam($sessionId: Int!, $answers: [AnswerInput!]!) {
@@ -357,19 +420,28 @@ const Quiz = () => {
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       const currentQs = questionsBySubject[activeSubject] || [];
-      const thisQuestion = currentQs[currentQuestion - 1];
+      const currentQNum = currentQuestionsBySubject[activeSubject] || 1;
+      const thisQuestion = currentQs[currentQNum - 1];
       if (!thisQuestion) return;
       const key = event.key;
-      if ((key === 'n' || key === 'N') && currentQuestion < currentQs.length) setCurrentQuestion(currentQuestion + 1);
-      else if ((key === 'p' || key === 'P') && currentQuestion > 1) setCurrentQuestion(currentQuestion - 1);
-      else if (key === 'a' || key === 'A') handleAnswerSelect(thisQuestion.options[0], thisQuestion.id);
+      if ((key === 'n' || key === 'N') && currentQNum < currentQs.length) {
+        setCurrentQuestionsBySubject(prev => ({
+          ...prev,
+          [activeSubject]: currentQNum + 1
+        }));
+      } else if ((key === 'p' || key === 'P') && currentQNum > 1) {
+        setCurrentQuestionsBySubject(prev => ({
+          ...prev,
+          [activeSubject]: currentQNum - 1
+        }));
+      } else if (key === 'a' || key === 'A') handleAnswerSelect(thisQuestion.options[0], thisQuestion.id);
       else if (key === 'b' || key === 'B') handleAnswerSelect(thisQuestion.options[1], thisQuestion.id);
       else if (key === 'c' || key === 'C') handleAnswerSelect(thisQuestion.options[2], thisQuestion.id);
       else if (key === 'd' || key === 'D') handleAnswerSelect(thisQuestion.options[3], thisQuestion.id);
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentQuestion, activeSubject, questionsBySubject]);
+  }, [activeSubject, questionsBySubject]);
 
   const formatTime = (time: string | null) => {
     if (time === null) return 'Loading...';
@@ -379,8 +451,9 @@ const Quiz = () => {
   const handleAnswerSelect = (option: string, questionId: string) => {
     const optionIndex = currentQ.options.indexOf(option);
     const answerLabel = ['a', 'b', 'c', 'd', 'e'][optionIndex];
+    const currentQNum = currentQuestionsBySubject[activeSubject] || 1;
 
-    setAnsweredQuestions(prev => ({ ...prev, [currentQuestion]: option }));
+    setAnsweredQuestions(prev => ({ ...prev, [currentQNum]: option }));
     
     setStoredAnswers(prev => {
       const newAnswers = prev.filter(ans => ans.questionId !== questionId);
@@ -388,30 +461,49 @@ const Quiz = () => {
     });
 
     const currentQs = questionsBySubject[activeSubject] || [];
-    if (currentQuestion < currentQs.length) {
-      setCurrentQuestion(currentQuestion + 1);
+    if (currentQNum < currentQs.length) {
+      setCurrentQuestionsBySubject(prev => ({
+        ...prev,
+        [activeSubject]: currentQNum + 1
+      }));
     }
   };
 
   const goToNext = () => {
     const currentQs = questionsBySubject[activeSubject] || [];
-    if (currentQuestion < currentQs.length) setCurrentQuestion(currentQuestion + 1);
+    const currentQNum = currentQuestionsBySubject[activeSubject] || 1;
+    if (currentQNum < currentQs.length) {
+      setCurrentQuestionsBySubject(prev => ({
+        ...prev,
+        [activeSubject]: currentQNum + 1
+      }));
+    }
   };
 
   const goToPrev = () => {
-    if (currentQuestion > 1) setCurrentQuestion(currentQuestion - 1);
+    const currentQNum = currentQuestionsBySubject[activeSubject] || 1;
+    if (currentQNum > 1) {
+      setCurrentQuestionsBySubject(prev => ({
+        ...prev,
+        [activeSubject]: currentQNum - 1
+      }));
+    }
   };
 
   const getButtonColor = (questionNum: number) => {
+    const currentQNum = currentQuestionsBySubject[activeSubject] || 1;
     if (answeredQuestions[questionNum]) return 'bg-green-500';
-    if (questionNum === currentQuestion) return 'bg-blue-600';
+    if (questionNum === currentQNum) return 'bg-blue-600';
     return 'bg-red-500';
   };
 
   const toggleMode = () => setIsDarkMode((prev) => !prev);
   const handleSubjectChange = (subject: string) => { 
     setActiveSubject(subject); 
-    setCurrentQuestion(1); 
+    setCurrentQuestionsBySubject(prev => ({
+      ...prev,
+      [subject]: prev[subject] || 1
+    })); 
     setAnsweredQuestions({}); 
   };
   const handleSubmitClick = () => setIsConfirmModalOpen(true);
@@ -439,7 +531,7 @@ const Quiz = () => {
     setLoading(true);
     setAnsweredQuestions({});
     setStoredAnswers([]);
-    setCurrentQuestion(1); // Always reset to 1
+    setCurrentQuestionsBySubject({});
     setExamId(null);
     setSubjectScores([]);
     setTotalScore(0);
@@ -450,11 +542,14 @@ const Quiz = () => {
   };
 
   const handleQuestionClick = (questionNum: number) => {
-    setCurrentQuestion(questionNum);
+    setCurrentQuestionsBySubject(prev => ({
+      ...prev,
+      [activeSubject]: questionNum
+    }));
   };
 
   const currentQuestions = questionsBySubject[activeSubject] || [];
-  const currentQ = currentQuestions[currentQuestion - 1];
+  const currentQ = currentQuestions[(currentQuestionsBySubject[activeSubject] || 1) - 1];
 
   if (!isMounted) return null;
   if (loading || !Object.keys(questionsBySubject).length) return <div className='min-h-screen w-full'><SkeletonLoader isDarkMode={false}/></div>;
@@ -535,7 +630,7 @@ const Quiz = () => {
               <div className="mb-6 flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center mb-2">
-                    <span className="bg-[#11479b] text-white rounded-full w-12 h-12 flex items-center justify-center mr-2 font-bold">{currentQuestion}</span>
+                    <span className="bg-[#11479b] text-white rounded-full w-12 h-12 flex items-center justify-center mr-2 font-bold">{currentQuestionsBySubject[activeSubject] || 1}</span>
                     <div className={isDarkMode ? 'text-white' : 'text-gray-800'}>
                       <ReactMarkdown>{currentQ.question}</ReactMarkdown>
                     </div>
@@ -553,7 +648,7 @@ const Quiz = () => {
                       className={`border rounded-lg p-4 py-3 h-12 text-left flex items-center ${
                         isDarkMode ? 'border-gray-700' : 'border-gray-300'
                       } ${
-                        answeredQuestions[currentQuestion] === option
+                        answeredQuestions[currentQuestionsBySubject[activeSubject] || 1] === option
                           ? 'bg-blue-200 dark:bg-blue-700'
                           : isDarkMode
                           ? 'bg-gray-800'
@@ -585,8 +680,8 @@ const Quiz = () => {
             </div>
           </div>
           <div className="flex space-x-2 ml-6">
-            <button onClick={goToPrev} disabled={currentQuestion === 1} className={`px-4 py-2 rounded-lg text-white ${currentQuestion === 1 ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#11479b]'}`}>Prev</button>
-            <button onClick={goToNext} disabled={currentQuestion === currentQuestions.length} className={`px-4 py-2 rounded-lg text-white ${currentQuestion === currentQuestions.length ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#11479b]'}`}>Next</button>
+            <button onClick={goToPrev} disabled={(currentQuestionsBySubject[activeSubject] || 1) === 1} className={`px-4 py-2 rounded-lg text-white ${currentQuestionsBySubject[activeSubject] === 1 ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#11479b]'}`}>Prev</button>
+            <button onClick={goToNext} disabled={(currentQuestionsBySubject[activeSubject] || 1) === currentQuestions.length} className={`px-4 py-2 rounded-lg text-white ${(currentQuestionsBySubject[activeSubject] || 1) === currentQuestions.length ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#11479b]'}`}>Next</button>
           </div>
         </div>
       </div>
