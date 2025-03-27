@@ -8,7 +8,6 @@ import ReactMarkdown from 'react-markdown';
 import FloatingCalculator from './FloatingCalculator';
 import SkeletonLoader from './SkeletonLoader';
 
-
 type Scores = { [key: string]: number };
 interface Question { id: string; question: string; options: string[] }
 interface SubjectScore { examSubject: string; score: number }
@@ -128,7 +127,6 @@ const EnhancedScoreGridModal = ({
   if (!isOpen) return null;
 
   return (
-    
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-10 backdrop-blur-sm">
       <div className="max-w-md w-full mx-4 bg-white/80 rounded-xl shadow-2xl border border-gray-100 flex flex-col max-h-[90vh]">
         <div className="flex-1 overflow-y-auto p-6">
@@ -168,7 +166,6 @@ const EnhancedScoreGridModal = ({
         </div>
       </div>
     </div>
-   
   );
 };
 
@@ -192,6 +189,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
   const [subjectScores, setSubjectScores] = useState<SubjectScore[]>([]);
   const [totalScore, setTotalScore] = useState<number>(0);
   const [timeSpent, setTimeSpent] = useState<string>('');
+  const [isCalculatorVisible, setIsCalculatorVisible] = useState(true); // New state for calculator visibility
 
   const selectedSubjects = JSON.parse(subjectsParam as string || '[]').map(normalizeSubjectName);
   const selectedYear = yearParam || '2023';
@@ -509,7 +507,10 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
     })); 
     setAnsweredQuestions({}); 
   };
-  const handleSubmitClick = () => setIsConfirmModalOpen(true);
+  const handleSubmitClick = () => {
+    setIsCalculatorVisible(false); // Hide calculator when submit is clicked
+    setIsConfirmModalOpen(true);
+  };
 
   const handleProceed = async () => {
     if (!examId) {
@@ -667,7 +668,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
             </>
           )}
         </div>
-        <FloatingCalculator />
+        {isCalculatorVisible && <FloatingCalculator />} {/* Conditionally render based on isCalculatorVisible */}
         <div className="flex justify-between items-center mt-28">
           <div className="max-w-[70vw] md:max-w-full overflow-x-auto scrollbar-hide hover:overflow-x-scroll md:overflow-x-visible">
             <div className="flex space-x-2">
