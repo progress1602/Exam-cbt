@@ -83,7 +83,7 @@ const LoginPage = () => {
     <div className="min-h-screen bg-[#E9EDF0] flex items-center justify-center p-4">
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden flex">
         {/* Left side - Image */}
-        <div className="hidden md:block md:w-1/2 md:h-[26rem] relative">
+        <div className="hidden md:block md:w-1/2 md:h-[28rem] relative">
           <div className="absolute inset-0 bg-black opacity-10"></div>
           <Image
             src="/login.jpg"
