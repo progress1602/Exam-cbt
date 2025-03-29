@@ -113,7 +113,7 @@ const LoginPage = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter your email or username"
+                    placeholder="Enter your username"
                     className="w-full h-10 px-4 rounded-xl border border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

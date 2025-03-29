@@ -92,7 +92,7 @@ const LoginPage = () => {
       
     } catch (err) {
       setError((err as any).message);
-      setIsLoading(false); // ✅ Stop loading immediately
+      setIsLoading(false); 
       setTimeout(() => {
         setError(null);
       }, 3000);
@@ -202,7 +202,7 @@ const LoginPage = () => {
                 <input 
                   type="tel" 
                   name="phoneNumber"
-                  placeholder='+234***18' 
+                  placeholder='' 
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
                   className='w-full h-10 px-4 rounded-xl border border-gray-400'

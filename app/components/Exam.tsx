@@ -180,7 +180,7 @@ const ExamGrid = () => {
     <div className="min-h-screen bg-[#1f1f1f]">
       <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       <div className="flex flex-col justify-center items-center text-white mx-auto max-w-80 md:mx-auto md:max-w-6xl py-20 space-y-4">
-        <div className="text-3xl md:text-4xl lg:text-4xl font-bold">
+        <div className="text-2xl md:text-3xl lg:text-3xl font-bold">
           {user ? (
             `HELLO ${user.firstName.toUpperCase()} ${user.lastName.toUpperCase()} (${user.userName}),`
           ) : (
