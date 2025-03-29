@@ -1,28 +1,30 @@
 "use client";
-import React from 'react';
-
-// import Login from "./components/Login";
-// import Testpart from "./components/Testpart";
-import Exam from "./components/Exam";
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Exam from "./components/Exam";
 
 export default function Home() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    router.push("/login");
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      setIsAuthenticated(true);
+    } else {
+      router.push("/login");
+    }
+
+    setLoading(false);
   }, []);
 
+  if (loading) return null; // or show a spinner
+
   return (
-    <div>
-      {/* <Login />   */}
-      {/* <Testpart /> */}
-      <Exam />
-    </div>
+    <>
+      {isAuthenticated ? <Exam /> : null}
+    </>
   );
-  return null; // Or a loading spinner
 }
-
-
-

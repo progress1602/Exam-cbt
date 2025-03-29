@@ -6,10 +6,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Updated import
 import toast, { Toaster } from 'react-hot-toast';
 import Image from 'next/image';
-
 
 // Utility function to capitalize first letter
 const capitalizeFirstLetter = (str: string) => {
@@ -24,7 +23,9 @@ const ExamGrid = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [jambSubjects, setJambSubjects] = useState<{ id: string; name: string }[]>([]);
   const [jambYears, setJambYears] = useState<string[]>([]);
-  const [user, setUser] = useState<{ firstName: string; lastName: string } | null>(null); // State for user data
+  const [user, setUser] = useState<{ firstName: string; lastName: string; userName: string } | null>(null); 
+
+  const router = useRouter(); 
 
   const waecSubjects = [
     "english language", "mathematics", "physics", "chemistry", "biology",
@@ -53,6 +54,7 @@ const ExamGrid = () => {
                   id
                   firstName
                   lastName
+                  userName
                   createdAt
                   updatedAt
                 }
@@ -66,6 +68,7 @@ const ExamGrid = () => {
           setUser({
             firstName: result.data.me.firstName,
             lastName: result.data.me.lastName,
+            userName: result.data.me.userName,
           });
         } else {
           toast.error("Failed to fetch user data");
@@ -126,7 +129,7 @@ const ExamGrid = () => {
       }
     };
 
-    fetchUserData(); // Fetch user data on mount
+    fetchUserData(); 
     fetchJambSubjects();
     fetchJambYears();
   }, []);
@@ -153,28 +156,40 @@ const ExamGrid = () => {
     setSelectedYear(year);
   };
 
-  const handleStartPractice = () => {
+  const handleStartPractice = (isJamb: boolean) => {
     if (!selectedYear) {
       toast.error("Please select a year");
       return;
     }
+
+    if (isJamb && selectedSubjects.length !== 4) {
+      toast.error("You must select exactly 4 subjects for JAMB");
+      return;
+    }
+
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
       toast.success(`Starting practice for ${selectedSubjects.map(capitalizeFirstLetter).join(", ")} - ${selectedYear}`);
+      // Navigate programmatically only if conditions are met
+      router.push(`/test?subjects=${encodeURIComponent(JSON.stringify(selectedSubjects))}&year=${encodeURIComponent(selectedYear || '')}`);
     }, 2000);
   };
 
   return (
-    
     <div className="min-h-screen bg-[#1f1f1f]">
       <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-      <div className="flex justify-center items-center text-white text-3xl mx-auto max-w-80 md:mx-auto md:max-w-6xl md:text-4xl lg:text-4xl font-bold py-20">
-        {user ? (
-          `HELLO ${user.firstName.toUpperCase()} ${user.lastName.toUpperCase()} YOU CAN START YOUR PRACTICE NOW`
-        ) : (
-          "HELLO PROGRESS YOU CAN START YOUR PRACTICE NOW" // Fallback while loading
-        )}
+      <div className="flex flex-col justify-center items-center text-white mx-auto max-w-80 md:mx-auto md:max-w-6xl py-20 space-y-4">
+        <div className="text-3xl md:text-4xl lg:text-4xl font-bold">
+          {user ? (
+            `HELLO ${user.firstName.toUpperCase()} ${user.lastName.toUpperCase()} (${user.userName}),`
+          ) : (
+            "HELLO"
+          )}
+        </div>
+        <div className="text-3xl md:text-4xl lg:text-4xl font-bold">
+          YOU CAN START YOUR PRACTICE NOW
+        </div>
       </div>
       <div className="flex flex-col justify-center items-center md:flex-row space-y-6 md:space-y-0 md:space-x-8 p-4">
         <div
@@ -255,23 +270,13 @@ const ExamGrid = () => {
               </div>
             </ScrollArea>
             <div className="fixed bottom-4 left-0 right-0 px-6">
-              <Link
-                href={{
-                  pathname: '/test',
-                  query: {
-                    subjects: JSON.stringify(selectedSubjects),
-                    year: selectedYear || '',
-                  },
-                }}
+              <Button
+                className="bg-blue-500 hover:bg-blue-600 w-full"
+                disabled={isLoading || jambSubjects.length === 0 || jambYears.length === 0 || !selectedYear}
+                onClick={() => handleStartPractice(true)} // Pass true for JAMB
               >
-                <Button
-                  className="bg-blue-500 hover:bg-blue-600 w-full"
-                  disabled={isLoading || jambSubjects.length === 0 || jambYears.length === 0 || !selectedYear}
-                  onClick={handleStartPractice}
-                >
-                  {isLoading ? 'Loading...' : 'Start Practice'}
-                </Button>
-              </Link>
+                {isLoading ? 'Loading...' : 'Start Practice'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -324,29 +329,18 @@ const ExamGrid = () => {
               </div>
             </ScrollArea>
             <div className="fixed bottom-4 left-0 right-0 px-6">
-              <Link
-                href={{
-                  pathname: '/test',
-                  query: {
-                    subjects: JSON.stringify(selectedSubjects),
-                    year: selectedYear || '',
-                  },
-                }}
+              <Button
+                className="bg-green-500 hover:bg-green-600 w-full"
+                disabled={isLoading || !selectedYear}
+                onClick={() => handleStartPractice(false)} // Pass false for WAEC
               >
-                <Button
-                  className="bg-green-500 hover:bg-green-600 w-full"
-                  disabled={isLoading || !selectedYear}
-                  onClick={handleStartPractice}
-                >
-                  {isLoading ? 'Loading...' : 'Start Practice'}
-                </Button>
-              </Link>
+                {isLoading ? 'Loading...' : 'Start Practice'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
     </div>
-    
   );
 };
 

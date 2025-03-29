@@ -71,10 +71,11 @@ const EnhancedScoreGridModal = ({
         const result = await response.json();
         if (result.errors) throw new Error(result.errors[0].message);
         const { firstName, lastName } = result.data.me;
-        setUserName(`${firstName} ${lastName}`);
+        // Convert firstName and lastName to uppercase
+        setUserName(`${firstName.toUpperCase()} ${lastName.toUpperCase()}`);
       } catch (error) {
         console.error('Error fetching user data:', error);
-        setUserName('User'); // Fallback name
+        setUserName('USER'); // Fallback name in uppercase
       }
     };
 

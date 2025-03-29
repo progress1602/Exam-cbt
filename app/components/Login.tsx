@@ -1,23 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner"; // Use this if you added `npx shadcn@latest add toast`
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const router = useRouter();
+
+  // ✅ Redirect to / if token exists
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      router.push("/");
+    } else {
+      setCheckingAuth(false);
+    }
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
-
+  
     const query = `
       mutation LoginStudent($input: LoginInput!) {
         loginStudent(input: $input) {
@@ -32,39 +42,42 @@ const LoginPage = () => {
         }
       }
     `;
-
+  
     const variables = {
       input: {
         identifier: email,
         password: password,
       },
     };
-
+  
     try {
       const response = await fetch("https://exam-1-iev5.onrender.com/graphql", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-        }, // No token for login request
+        },
         body: JSON.stringify({ query, variables }),
       });
-
+  
       const result = await response.json();
-
-      if (result.data?.loginStudent?.success) {
-        const token = result.data.loginStudent.token;
-        localStorage.setItem("token", token); // Store token in localStorage
-        router.push("/exam");
+      const data = result.data?.loginStudent;
+  
+      if (data?.success) {
+        localStorage.setItem("token", data.token);
+        router.push("/");
       } else {
-        setError(result.data?.loginStudent?.message || "Login failed");
+        toast(data?.message || "Login failed");
+        setIsLoading(false); // Stop loading on failure
       }
     } catch (error) {
       console.error("An error occurred during login:", error);
-      setError("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
+      toast("An unexpected error occurred. Please try again.");
+      setIsLoading(false); //  Stop loading on error
     }
   };
+  
+
+  if (checkingAuth) return null;
 
   return (
     <div className="min-h-screen bg-[#E9EDF0] flex items-center justify-center p-4">
@@ -93,11 +106,6 @@ const LoginPage = () => {
                 Login to your account
               </h2>
 
-              {/* Error Message */}
-              {error && (
-                <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
-              )}
-
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>
                   <label className="mb-2 ml-1 block text-gray-700">
@@ -114,9 +122,7 @@ const LoginPage = () => {
                 </div>
 
                 <div>
-                  <label className="mb-2 ml-1 block text-gray-700">
-                    Password
-                  </label>
+                  <label className="mb-2 ml-1 block text-gray-700">Password</label>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}

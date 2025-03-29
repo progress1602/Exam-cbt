@@ -89,21 +89,29 @@ const LoginPage = () => {
         setShowToast(false);
         router.push('/login');
       }, 3000);
-
+      
     } catch (err) {
       setError((err as any).message);
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // ✅ Stop loading immediately
+      setTimeout(() => {
+        setError(null);
+      }, 3000);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#E9EDF0] flex items-center justify-center p-4">
       {showToast && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-slide-in">
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-slide-in duration-300">
           Signup successful!
         </div>
       )}
+
+        {error && (
+           <div className="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-slide-in duration-300">
+             {error}
+            </div>
+        )}
 
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden flex">
         <div className="hidden md:block md:w-1/2 md:h-[38rem] relative">
