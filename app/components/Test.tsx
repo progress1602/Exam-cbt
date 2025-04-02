@@ -144,7 +144,7 @@ const EnhancedScoreGridModal = ({
                   <div className="col-span-6 p-3 flex items-center font-medium text-gray-700">{normalizeSubjectName(examSubject)}</div>
                   <div className="col-span-6 p-3 flex justify-center">
                     <div className={`px-3 py-2 border rounded-lg text-center ${getGradeColor(score)} font-semibold`}>
-                      {score}<span className="ml-1 text-gray-400">/40</span>
+                      {score}<span className="ml-1 text-gray-400">/100</span>
                     </div>
                   </div>
                 </div>
@@ -718,7 +718,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
         <div className="flex justify-between items-center mt-28">
           <div className="max-w-[70vw] overflow-x-auto scrollbar-hide md:max-w-[calc(2rem*20+0.5rem*19)] md:overflow-x-auto lg:max-w-[calc(2rem*20+0.5rem*19)] lg:overflow-x-auto">
             <div className="flex space-x-2">
-              {Array.from({ length: 40 }, (_, index) => index + 1).map((questionNum) => (
+              {Array.from({ length: currentQuestions.length }, (_, index) => index + 1).map((questionNum) => (
                 <button
                   key={questionNum}
                   onClick={() => handleQuestionClick(questionNum)}
