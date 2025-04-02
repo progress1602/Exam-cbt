@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Moon, Sun, Eye, Calculator, Edit, RotateCcw } from 'lucide-react';
+import { Moon, Sun, Eye, Calculator, Edit, RotateCcw, X } from 'lucide-react';
 import domtoimage from 'dom-to-image';
 import ReactMarkdown from 'react-markdown';
 import FloatingCalculator from './FloatingCalculator';
 import SkeletonLoader from './SkeletonLoader';
 
 type Scores = { [key: string]: number };
-interface Question { id: string; question: string; options: string[] }
+interface Question { id: string; question: string; options: string[]; imageUrl?: string }
 interface SubjectScore { examSubject: string; score: number }
 interface FinishExamResponse {
   sessionId: number;
@@ -41,9 +41,8 @@ const EnhancedScoreGridModal = ({
   resetQuizState: () => void;
 }) => {
   const router = useRouter();
-  const [userName, setUserName] = useState(''); // New state for user's name
+  const [userName, setUserName] = useState(''); 
 
-  // Fetch user data when component mounts
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -71,11 +70,10 @@ const EnhancedScoreGridModal = ({
         const result = await response.json();
         if (result.errors) throw new Error(result.errors[0].message);
         const { firstName, lastName } = result.data.me;
-        // Convert firstName and lastName to uppercase
         setUserName(`${firstName.toUpperCase()} ${lastName.toUpperCase()}`);
       } catch (error) {
         console.error('Error fetching user data:', error);
-        setUserName('USER'); // Fallback name in uppercase
+        setUserName('USER'); 
       }
     };
 
@@ -122,7 +120,7 @@ const EnhancedScoreGridModal = ({
   };
 
   const handleStartOver = () => {
-    router.push('/exam');
+    router.push('/');
   };
 
   if (!isOpen) return null;
@@ -134,7 +132,7 @@ const EnhancedScoreGridModal = ({
           <div id="score-section">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">{userName}, <br /> <span className='font-medium text-2xl'>2025 Jamb Score</span></h2>
-              <p className="font-bold"><span className="text-red-500 font-bold">Total Score : </span><br /><span className='text-2xl'>{totalScore}/80</span></p>
+              <p className="font-bold"><span className="text-red-500 font-bold">Total Score : </span><br /><span className='text-2xl'>{totalScore}/400</span></p>
             </div>
             <div className="mb-6 rounded-lg overflow-hidden shadow-inner">
               <div className="grid grid-cols-12 bg-gray-800 text-white font-medium">
@@ -146,7 +144,7 @@ const EnhancedScoreGridModal = ({
                   <div className="col-span-6 p-3 flex items-center font-medium text-gray-700">{normalizeSubjectName(examSubject)}</div>
                   <div className="col-span-6 p-3 flex justify-center">
                     <div className={`px-3 py-2 border rounded-lg text-center ${getGradeColor(score)} font-semibold`}>
-                      {score}<span className="ml-1 text-gray-400">/20</span>
+                      {score}<span className="ml-1 text-gray-400">/40</span>
                     </div>
                   </div>
                 </div>
@@ -162,7 +160,7 @@ const EnhancedScoreGridModal = ({
         </div>
         <button onClick={handleDownload} className="underline decoration-2 decoration-black h-10 font-medium mb-4">Download Result</button>
         <div id="button-section" className="p-6 pt-0 flex justify-between gap-4 shrink-0">
-          <button onClick={handleRewrite} className="flex-1 bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 flex items-center justify-center font-medium shadow-md"><Edit size={20} className="mr-2" />Rewrite</button>
+          <button onClick={handleRewrite} className="flex-1 bg bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 flex items-center justify-center font-medium shadow-md"><Edit size={20} className="mr-2" />Rewrite</button>
           <button onClick={handleStartOver} className="flex-1 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 flex items-center justify-center font-medium shadow-md"><RotateCcw size={20} className="mr-2" />Start Over</button>
         </div>
       </div>
@@ -190,7 +188,9 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
   const [subjectScores, setSubjectScores] = useState<SubjectScore[]>([]);
   const [totalScore, setTotalScore] = useState<number>(0);
   const [timeSpent, setTimeSpent] = useState<string>('');
-  const [isCalculatorVisible, setIsCalculatorVisible] = useState(true); // New state for calculator visibility
+  const [isCalculatorVisible, setIsCalculatorVisible] = useState(true);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   const selectedSubjects = JSON.parse(subjectsParam as string || '[]').map(normalizeSubjectName);
   const selectedYear = yearParam || '2023';
@@ -268,6 +268,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
                     id
                     question
                     options
+                    imageUrl
                   }
                 }
               }
@@ -509,7 +510,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
     setAnsweredQuestions({}); 
   };
   const handleSubmitClick = () => {
-    setIsCalculatorVisible(false); // Hide calculator when submit is clicked
+    setIsCalculatorVisible(false); 
     setIsConfirmModalOpen(true);
   };
 
@@ -551,6 +552,16 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
       ...prev,
       [activeSubject]: questionNum
     }));
+  };
+
+  const handleImageClick = (imageUrl: string) => {
+    setSelectedImageUrl(imageUrl);
+    setIsImageModalOpen(true);
+  };
+
+  const handleCloseImageModal = () => {
+    setIsImageModalOpen(false);
+    setSelectedImageUrl(null);
   };
 
   const currentQuestions = questionsBySubject[activeSubject] || [];
@@ -617,12 +628,32 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
           resetQuizState={resetQuizState}
         />
 
-        <div className="mx-auto max-w-6xl mt-32 md:max-w-4xl md:mt-10 lg:mx-auto lg:max-w-4xl lg:mt-10">
+            {isImageModalOpen && selectedImageUrl && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-70 backdrop-blur-sm">
+                <div className={`relative rounded-lg p-6 ${isDarkMode ? 'bg-[#333333]' : 'bg-gray-200'} max-w-3xl w-full mx-4 shadow-2xl transform transition-all duration-300 scale-100 hover:scale-[1.02]`}>
+                  <button
+                    onClick={handleCloseImageModal}
+                    className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white transition-colors z-10 bg-white/80 dark:bg-gray-800/80 rounded-full p-1"
+                  >
+                    <X size={24} />
+                  </button>
+                  <div className="flex items-center justify-center min-h-[50vh] max-h-[80vh] p-4">
+                    <img
+                      src={selectedImageUrl}
+                      alt="Expanded Question Image"
+                      className="max-w-full max-h-full object-contain rounded-lg shadow-md transition-transform duration-300 hover:scale-105"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+        <div className="mx-auto max-w-6xl mt-32 md:max-w-4xl md:mt-20 lg:mx-auto lg:max-w-4xl lg:mt-10">
           <div className={`p-4 rounded-lg mb-4 ${isDarkMode ? 'bg-[#333333]' : 'bg-blue-100'}`}>
             <div className="flex justify-between items-center">
               <div>
                 <p className={`font-bold underline ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>instructions:</p>
-                {!hideInstructions && <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Answer All Questions</p>}
+                {!hideInstructions && <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>All questions with images click on them to see full view</p>}
               </div>
               <button className="text-blue-600 flex items-center dark:text-blue-400" onClick={() => setHideInstructions(!hideInstructions)}>
                 <Eye className="mr-1 w-5 h-5" />{hideInstructions ? 'Show instruction' : 'Hide instruction'}
@@ -640,6 +671,20 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
                       <ReactMarkdown>{currentQ.question}</ReactMarkdown>
                     </div>
                   </div>
+                  {currentQ.imageUrl && (
+                    <div className="flex justify-center">
+                      <div
+                        className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center cursor-pointer"
+                        onClick={() => handleImageClick(currentQ.imageUrl!)}
+                      >
+                        <img
+                          src={currentQ.imageUrl}
+                          alt="Question Image"
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-2 md:gap-4 md:mb-6 lg:mb-6 lg:gap-4">
@@ -669,17 +714,17 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
             </>
           )}
         </div>
-        {isCalculatorVisible && <FloatingCalculator />} {/* Conditionally render based on isCalculatorVisible */}
+        {isCalculatorVisible && <FloatingCalculator />}
         <div className="flex justify-between items-center mt-28">
-          <div className="max-w-[70vw] md:max-w-full overflow-x-auto scrollbar-hide hover:overflow-x-scroll md:overflow-x-visible">
+          <div className="max-w-[70vw] overflow-x-auto scrollbar-hide md:max-w-[calc(2rem*20+0.5rem*19)] md:overflow-x-auto lg:max-w-[calc(2rem*20+0.5rem*19)] lg:overflow-x-auto">
             <div className="flex space-x-2">
-              {currentQuestions.map((_, index) => (
+              {Array.from({ length: 40 }, (_, index) => index + 1).map((questionNum) => (
                 <button
-                  key={index + 1}
-                  onClick={() => handleQuestionClick(index + 1)}
-                  className={`min-w-[2rem] h-8 ${getButtonColor(index + 1)} text-white rounded-full flex items-center justify-center text-sm font-medium`}
+                  key={questionNum}
+                  onClick={() => handleQuestionClick(questionNum)}
+                  className={`min-w-[2rem] h-8 ${getButtonColor(questionNum)} text-white rounded-full flex items-center justify-center text-sm font-medium`}
                 >
-                  {index + 1}
+                  {questionNum}
                 </button>
               ))}
             </div>
