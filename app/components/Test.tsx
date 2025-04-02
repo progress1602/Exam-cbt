@@ -628,25 +628,25 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
           resetQuizState={resetQuizState}
         />
 
-            {isImageModalOpen && selectedImageUrl && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-70 backdrop-blur-sm">
-                <div className={`relative rounded-lg p-6 ${isDarkMode ? 'bg-[#333333]' : 'bg-gray-200'} max-w-3xl w-full mx-4 shadow-2xl transform transition-all duration-300 scale-100 hover:scale-[1.02]`}>
-                  <button
-                    onClick={handleCloseImageModal}
-                    className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white transition-colors z-10 bg-white/80 dark:bg-gray-800/80 rounded-full p-1"
-                  >
-                    <X size={24} />
-                  </button>
-                  <div className="flex items-center justify-center min-h-[50vh] max-h-[80vh] p-4">
-                    <img
-                      src={selectedImageUrl}
-                      alt="Expanded Question Image"
-                      className="max-w-full max-h-full object-contain rounded-lg shadow-md transition-transform duration-300 hover:scale-105"
-                    />
-                  </div>
-                </div>
+        {isImageModalOpen && selectedImageUrl && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-70 backdrop-blur-sm">
+            <div className={`relative rounded-lg p-6 ${isDarkMode ? 'bg-[#333333]' : 'bg-gray-200'} max-w-3xl w-full mx-4 shadow-2xl transform transition-all duration-300 scale-100 hover:scale-[1.02]`}>
+              <button
+                onClick={handleCloseImageModal}
+                className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white transition-colors z-10 bg-white/80 dark:bg-gray-800/80 rounded-full p-1"
+              >
+                <X size={24} />
+              </button>
+              <div className="flex items-center justify-center min-h-[50vh] max-h-[80vh] p-4">
+                <img
+                  src={selectedImageUrl}
+                  alt="Expanded Question Image"
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-md transition-transform duration-300 hover:scale-105"
+                />
               </div>
-            )}
+            </div>
+          </div>
+        )}
 
         <div className="mx-auto max-w-6xl mt-32 md:max-w-4xl md:mt-20 lg:mx-auto lg:max-w-4xl lg:mt-10">
           <div className={`p-4 rounded-lg mb-4 ${isDarkMode ? 'bg-[#333333]' : 'bg-blue-100'}`}>
@@ -715,23 +715,58 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
           )}
         </div>
         {isCalculatorVisible && <FloatingCalculator />}
-        <div className="flex justify-between items-center mt-28">
-          <div className="max-w-[70vw] overflow-x-auto scrollbar-hide md:max-w-[calc(2rem*20+0.5rem*19)] md:overflow-x-auto lg:max-w-[calc(2rem*20+0.5rem*19)] lg:overflow-x-auto">
-            <div className="flex space-x-2">
-              {Array.from({ length: currentQuestions.length }, (_, index) => index + 1).map((questionNum) => (
-                <button
-                  key={questionNum}
-                  onClick={() => handleQuestionClick(questionNum)}
-                  className={`min-w-[2rem] h-8 ${getButtonColor(questionNum)} text-white rounded-full flex items-center justify-center text-sm font-medium`}
-                >
-                  {questionNum}
-                </button>
-              ))}
+        <div className="mt-20 md:flex">
+          <div className="relative">
+            {/* Question Numbers Container */}
+            <div className="max-w-[100vw] overflow-x-auto scrollbar-hide md:max-w-full md:overflow-x-visible lg:max-w-full lg:overflow-x-visible">
+              <div className="flex flex-col md:flex-row md:flex-wrap lg:flex-row lg:flex-wrap gap-y-2">
+                {/* First Line  */}
+                <div className="flex space-x-2 md:w-full lg:w-full">
+                  {Array.from({ length: Math.min(currentQuestions.length, 25) }, (_, index) => index + 1).map((questionNum) => (
+                    <button
+                      key={questionNum}
+                      onClick={() => handleQuestionClick(questionNum)}
+                      className={`min-w-[2rem] h-8 ${getButtonColor(questionNum)} text-white rounded-full flex items-center justify-center text-sm font-medium`}
+                    >
+                      {questionNum}
+                    </button>
+                  ))}
+                </div>
+                {/* Second Line */}
+                {currentQuestions.length > 25 && (
+                  <div className="flex space-x-2 md:w-full lg:w-full">
+                    {Array.from({ length: Math.min(currentQuestions.length - 25, 25) }, (_, index) => index + 26).map((questionNum) => (
+                      <button
+                        key={questionNum}
+                        onClick={() => handleQuestionClick(questionNum)}
+                        className={`min-w-[2rem] h-8 ${getButtonColor(questionNum)} text-white rounded-full flex items-center justify-center text-sm font-medium`}
+                      >
+                        {questionNum}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+
           </div>
-          <div className="flex space-x-2 ml-6">
-            <button onClick={goToPrev} disabled={(currentQuestionsBySubject[activeSubject] || 1) === 1} className={`px-4 py-2 rounded-lg text-white ${currentQuestionsBySubject[activeSubject] === 1 ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#11479b]'}`}>Prev</button>
-            <button onClick={goToNext} disabled={(currentQuestionsBySubject[activeSubject] || 1) === currentQuestions.length} className={`px-4 py-2 rounded-lg text-white ${(currentQuestionsBySubject[activeSubject] || 1) === currentQuestions.length ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#11479b]'}`}>Next</button>
+
+          {/* Prev/Next Buttons */}
+          <div className="flex justify-center md:justify-end space-x-2 mt-4">
+            <button 
+              onClick={goToPrev} 
+              disabled={(currentQuestionsBySubject[activeSubject] || 1) === 1} 
+              className={`px-4 py-2 rounded-lg text-white ${currentQuestionsBySubject[activeSubject] === 1 ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#11479b]'}`}
+            >
+              Prev
+            </button>
+            <button 
+              onClick={goToNext} 
+              disabled={(currentQuestionsBySubject[activeSubject] || 1) === currentQuestions.length} 
+              className={`px-4 py-2 rounded-lg text-white ${(currentQuestionsBySubject[activeSubject] || 1) === currentQuestions.length ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#11479b]'}`}
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
