@@ -180,7 +180,7 @@ const EnhancedScoreGridModal = ({
           <button onClick={handleRewrite} className="flex-1 bg bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 flex items-center justify-center font-medium shadow-md"><Edit size={20} className="mr-2" />Rewrite</button>
           <button onClick={handleStartOver} className="flex-1 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 flex items-center justify-center font-medium shadow-md"><RotateCcw size={20} className="mr-2" />Start Over</button>
         </div>
-        <button onClick={handleCorrection} className='mx-auto max-w-4xl font-medium shadow-md hover:bg-red-600 bg-red-500 rounded-2xl w-96 text-white py-2 px-2 mb-2'>Correction</button>
+        <button onClick={handleCorrection} className='mx-auto max-w-72 md:max-w-4xl font-medium shadow-md hover:bg-red-600 bg-red-500 rounded-2xl w-96 text-white py-2 px-2 mb-2'>Correction</button>
       </div>
     </div>
   );

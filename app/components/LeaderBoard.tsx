@@ -33,7 +33,7 @@ export function Leaderboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch data from the GraphQL API
+ 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
@@ -69,7 +69,7 @@ export function Leaderboard() {
           throw new Error(result.errors?.[0]?.message || "Failed to fetch leaderboard")
         }
 
-        // Map API data to match your Student type
+       
         const fetchedStudents: Student[] = result.data.getCompetitionLeaderboard.map((entry: any) => ({
           id: entry.student.id,
           name: `${entry.student.firstName} ${entry.student.lastName}`,
