@@ -44,5 +44,9 @@
     "@types/react-katex": "^3.0.4",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },"overrides": {
+  "react-katex": {
+    "react": "$react"
   }
+}
 }
