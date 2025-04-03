@@ -20,7 +20,7 @@ export default function Home() {
     setLoading(false);
   }, []);
 
-  if (loading) return null; // or show a spinner
+  if (loading) return null; 
 
   return (
     <>
