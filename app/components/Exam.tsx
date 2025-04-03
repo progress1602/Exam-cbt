@@ -73,6 +73,8 @@ const ExamGrid = () => {
           });
         } else {
           toast.error("Failed to fetch user data");
+          localStorage.removeItem('token'); // Clear token if user data fetch fails
+          router.push("/login"); // Redirect to login page
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
