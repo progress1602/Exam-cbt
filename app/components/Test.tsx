@@ -127,6 +127,7 @@ const EnhancedScoreGridModal = ({
 
   const handleRewrite = async () => {
     resetQuizState();
+
     await startJambExam();
     onClose();
   };
@@ -214,7 +215,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
 
   const selectedSubjects = JSON.parse(subjectsParam as string || '[]').map(normalizeSubjectName);
   const selectedYear = yearParam || '2023';
-  const isCompetition = compParam || false; // Assuming compParam is passed as a prop
+  const isCompetition = compParam || false; 
 
   const startJambExam = async (isCompetition?:boolean) => {
     setLoading(true);
@@ -397,7 +398,14 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
     
     setTimeLeft("01:30:00");
 
-    if (selectedSubjects.length > 0) startJambExam();
+    if (selectedSubjects.length > 0) {
+      if(isCompetition === 'true') {
+        startJambExam(true);
+      }else{
+        startJambExam();
+      }
+    }
+     
   }, []);
 
   useEffect(() => {
