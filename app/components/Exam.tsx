@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from 'next/navigation'; // Updated import
 import toast, { Toaster } from 'react-hot-toast';
 import Image from 'next/image';
+import Link from 'next/link';
 
 // Utility function to capitalize first letter
 const capitalizeFirstLetter = (str: string) => {
@@ -156,8 +157,8 @@ const ExamGrid = () => {
     setSelectedYear(year);
   };
 
-  const handleStartPractice = (isJamb: boolean) => {
-    if (!selectedYear) {
+  const handleStartPractice = (isJamb: boolean, isCompetition?:boolean) => {
+    if (!selectedYear && !isCompetition) {
       toast.error("Please select a year");
       return;
     }
@@ -172,7 +173,11 @@ const ExamGrid = () => {
       setIsLoading(false);
       toast.success(`Starting practice for ${selectedSubjects.map(capitalizeFirstLetter).join(", ")} - ${selectedYear}`);
       // Navigate programmatically only if conditions are met
+      if(isCompetition) {
+        router.push(`/test?subjects=${encodeURIComponent(JSON.stringify(selectedSubjects))}&year=${encodeURIComponent(selectedYear || '')}&competition=true`);
+      }else { 
       router.push(`/test?subjects=${encodeURIComponent(JSON.stringify(selectedSubjects))}&year=${encodeURIComponent(selectedYear || '')}`);
+      }
     }, 2000);
   };
 
@@ -191,31 +196,59 @@ const ExamGrid = () => {
           YOU CAN START YOUR PRACTICE NOW
         </div>
       </div>
-      <div className="flex flex-col justify-center items-center md:flex-row space-y-6 md:space-y-0 md:space-x-8 p-4">
-        <div
-          className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-blue-500 w-full md:w-80 h-64 flex flex-col items-center justify-center"
-          onClick={() => setIsJambModalOpen(true)}
-        >
-          <div className="w-16 h-16 rounded-full bg-blue-300 flex items-center justify-center mb-4">
-            <Image src="/jamb.png" alt="JAMB Logo" width={60} height={60} className="object-contain" />
+      <div className="flex flex-col items-center space-y-8 p-4">
+        {/* JAMB Section */}
+        <div className="flex flex-col md:flex-row justify-center space-y-6 md:space-y-0 md:space-x-8">
+          <Link href="/leaderboard">
+          <div
+            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-blue-500 w-full md:w-80 h-64 flex flex-col items-center justify-center">
+            <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4">
+              <Image src="/leader.jpg" alt="JAMB Logo" width={100} height={100} className="object-contain" />
+            </div>
+            <h2 className="text-2xl font-bold text-jamb mb-2">JAMB</h2>
+            <p className="text-gray-600 text-center">Leaderboard</p>
           </div>
-          <h2 className="text-2xl font-bold text-jamb mb-2">JAMB</h2>
-          <p className="text-gray-600 text-center">Joint Admissions and Matriculation Board</p>
+          </Link>
+
+          <div
+            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-blue-500 w-full md:w-80 h-64 flex flex-col items-center justify-center"
+            onClick={() => setIsJambModalOpen(true)}
+          >
+            <div className="w-16 h-16 rounded-full bg-blue-300 flex items-center justify-center mb-4">
+              <Image src="/jamb.png" alt="JAMB Logo" width={60} height={60} className="object-contain" />
+            </div>
+            <h2 className="text-2xl font-bold text-jamb mb-2">JAMB</h2>
+            <p className="text-gray-600 text-center">Joint Admissions and Matriculation Board</p>
+          </div>
         </div>
 
-        <div
-          className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-green-500 w-full md:w-80 h-64 flex flex-col items-center justify-center"
-          onClick={() => setIsWaecModalOpen(true)}
-        >
-          <div className="w-16 h-16 rounded-full bg-green-300 flex items-center justify-center mb-4">
-            <Image src="/waec.png" alt="WAEC Logo" width={70} height={70} className="object-contain" />
+        {/* WAEC Section */}
+        <div className="flex flex-col md:flex-row justify-center space-y-6 md:space-y-0 md:space-x-8">
+         <div
+            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-green-500 w-full md:w-80 h-64 flex flex-col items-center justify-center relative">
+            <div className="w-24 h-24 rounded-full  flex items-center justify-center mb-4">
+              <Image src="/leader.jpg" alt="WAEC Logo" width={100} height={100} className="object-contain" />
+            </div>
+            <h2 className="text-2xl font-bold text-waec mb-2">WAEC</h2>        
+            <p className="text-gray-600 text-center">Leaderboard</p>
+            <p className="text-red-500 font-bold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">Coming Soon</p>
           </div>
-          <h2 className="text-2xl font-bold text-waec mb-2">WAEC</h2>
-          <p className="text-gray-600 text-center">West African Examinations Council</p>
+
+          <div
+            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-green-500 w-full md:w-80 h-64 flex flex-col items-center justify-center relative"
+            onClick={() => setIsWaecModalOpen(false)}
+          >
+            <div className="w-16 h-16 rounded-full bg-green-300 flex items-center justify-center mb-4">
+              <Image src="/waec.png" alt="WAEC Logo" width={70} height={70} className="object-contain" />
+            </div>
+            <h2 className="text-2xl font-bold text-waec mb-2">WAEC</h2>
+            <p className="text-gray-600 text-center">West African Examinations Council</p>
+            <p className="text-red-500 font-bold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">Coming Soon</p>
+          </div>
         </div>
 
         <Dialog open={isJambModalOpen} onOpenChange={setIsJambModalOpen}>
-          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden">
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden pb-20">
             <DialogHeader>
               <DialogTitle className="text-jamb">Select JAMB Subjects and Year</DialogTitle>
             </DialogHeader>
@@ -273,9 +306,16 @@ const ExamGrid = () => {
               <Button
                 className="bg-blue-500 hover:bg-blue-600 w-full"
                 disabled={isLoading || jambSubjects.length === 0 || jambYears.length === 0 || !selectedYear}
-                onClick={() => handleStartPractice(true)} // Pass true for JAMB
+                onClick={() => handleStartPractice(true,false)}
               >
                 {isLoading ? 'Loading...' : 'Start Practice'}
+              </Button>
+              <Button
+                className="bg-blue-500 hover:bg-blue-600 w-full mt-2"
+                disabled={isLoading || selectedSubjects.length !== 4 || selectedYear !== null}
+                onClick={() => handleStartPractice(true,true)}
+              >
+                {isLoading ? 'Loading...' : 'Start Competition'}
               </Button>
             </div>
           </DialogContent>

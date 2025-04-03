@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Moon, Sun, Eye, Calculator, Edit, RotateCcw, X } from 'lucide-react';
 import domtoimage from 'dom-to-image';
-import ReactMarkdown from 'react-markdown';
 import FloatingCalculator from './FloatingCalculator';
 import SkeletonLoader from './SkeletonLoader';
+import { BlockMath, InlineMath } from "react-katex"; 
+import "katex/dist/katex.min.css";
+import Link from 'next/link';
 
 type Scores = { [key: string]: number };
 interface Question { id: string; question: string; options: string[]; imageUrl?: string }
@@ -17,6 +19,14 @@ interface FinishExamResponse {
   totalScore: number;
   isCompleted: boolean;
   timeSpent: string;
+  questionDetails: QuestionDetails[];
+}
+
+interface QuestionDetails {
+  questionId?: string;
+  correctAnswer: string;
+  studentAnswer: string;
+  isCorrect: boolean;
 }
 
 const normalizeSubjectName = (subject: string) => subject.trim().toUpperCase();
@@ -30,6 +40,7 @@ const EnhancedScoreGridModal = ({
   selectedSubjects,
   startJambExam,
   resetQuizState,
+  setIsCorrections,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -39,6 +50,7 @@ const EnhancedScoreGridModal = ({
   selectedSubjects: string[];
   startJambExam: () => Promise<void>;
   resetQuizState: () => void;
+  setIsCorrections: (value: boolean) => void;
 }) => {
   const router = useRouter();
   const [userName, setUserName] = useState(''); 
@@ -123,6 +135,11 @@ const EnhancedScoreGridModal = ({
     router.push('/');
   };
 
+  const handleCorrection = () => {
+    setIsCorrections(true);
+    onClose();
+  }
+
   if (!isOpen) return null;
 
   return (
@@ -163,16 +180,19 @@ const EnhancedScoreGridModal = ({
           <button onClick={handleRewrite} className="flex-1 bg bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 flex items-center justify-center font-medium shadow-md"><Edit size={20} className="mr-2" />Rewrite</button>
           <button onClick={handleStartOver} className="flex-1 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 flex items-center justify-center font-medium shadow-md"><RotateCcw size={20} className="mr-2" />Start Over</button>
         </div>
+        <button onClick={handleCorrection} className='mx-auto max-w-4xl font-medium shadow-md hover:bg-red-600 bg-red-500 rounded-2xl w-96 text-white py-2 px-2 mb-2'>Correction</button>
       </div>
     </div>
   );
 };
 
-const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefined, subjectsParam: string | string[] | undefined}) => {
+const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[] | undefined, subjectsParam: string | string[] | undefined,compParam:string | string[] | undefined}) => {
   const router = useRouter();
   const [timeLeft, setTimeLeft] = useState<string>("01:30:00");
+  const [corrections, setCorrections] = useState<QuestionDetails[]>([]);
+  const [isCorrections, setIsCorrections] = useState(false);
   const [currentQuestionsBySubject, setCurrentQuestionsBySubject] = useState<{ [key: string]: number }>({});
-  const [answeredQuestions, setAnsweredQuestions] = useState<{ [key: number]: string }>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [subject: string]: { [questionId: string]: string } }>({}); // New state for per-subject answers
   const [storedAnswers, setStoredAnswers] = useState<{ questionId: string; answer: string }[]>([]);
   const [hideInstructions, setHideInstructions] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -194,8 +214,9 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
 
   const selectedSubjects = JSON.parse(subjectsParam as string || '[]').map(normalizeSubjectName);
   const selectedYear = yearParam || '2023';
+  const isCompetition = compParam || false; // Assuming compParam is passed as a prop
 
-  const startJambExam = async () => {
+  const startJambExam = async (isCompetition?:boolean) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -211,15 +232,15 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
         headers,
         body: JSON.stringify({
           query: `
-            mutation StartJambExam($subjects: [String!]!, $examYear: String!) {
-              startJambExam(subjects: $subjects, examYear: $examYear) {
+            mutation StartJambExam($subjects: [String!]!, $examYear: String, $isCompetition: Boolean) {
+              startJambExam(subjects: $subjects, examYear: $examYear, isCompetition: $isCompetition) {
                 id
                 subjects
                 remainingTime
               }
             }
           `,
-          variables: { subjects: selectedSubjects, examYear: selectedYear },
+          variables: { subjects: selectedSubjects, examYear: selectedYear || String(new Date().getFullYear()), isCompetition: isCompetition || false },
         }),
       });
 
@@ -269,6 +290,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
                     question
                     options
                     imageUrl
+            
                   }
                 }
               }
@@ -294,7 +316,8 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
     }
   };
 
-  const finishJambExam = async (sessionId: string, answers: { questionId: string; answer: string }[]) => {
+  const finishJambExam = async (sessionId: string, answers: { questionId: string; answer: string }[],questionIds:string[]) => {
+    console.log(' questionIds:', questionIds);
     try {
       const token = localStorage.getItem('token');
       const headers: HeadersInit = {
@@ -309,13 +332,19 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
         headers,
         body: JSON.stringify({
           query: `
-            mutation FinishJambExam($sessionId: Int!, $answers: [AnswerInput!]!) {
-              finishJambExam(sessionId: $sessionId, answers: $answers) {
+            mutation FinishJambExam($sessionId: Int!, $answers: [AnswerInput!]!,$questionIds:[String!]!) {
+              finishJambExam(sessionId: $sessionId, answers: $answers, questionIds: $questionIds) {
                 sessionId
                 subjectScores { examSubject, score }
                 totalScore
                 isCompleted
                 timeSpent
+                		questionDetails{
+                    questionId
+                  correctAnswer
+                  studentAnswer
+                  isCorrect
+                } 
               }
             }
           `,
@@ -325,6 +354,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
               questionId,
               answer: answer.toLowerCase(),
             })),
+            questionIds: questionIds.map((id) => id.toLowerCase()),
           },
         }),
       });
@@ -341,6 +371,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
       );
       setTotalScore(examResult.totalScore);
       setTimeSpent(examResult.timeSpent);
+      setCorrections(examResult.questionDetails);
       return examResult.isCompleted;
     } catch (err) {
       console.error('FinishJambExam Error:', err);
@@ -379,7 +410,8 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
   useEffect(() => {
     if (timeLeft === null || loading || timeLeft === "00:00:00") {
       if (timeLeft === "00:00:00" && examId) {
-        finishJambExam(examId, storedAnswers).then((isCompleted) => {
+        let questionIds = Object.values(questionsBySubject).flat().map(q => q.id);
+        finishJambExam(examId, storedAnswers,questionIds).then((isCompleted) => {
           if (isCompleted) {
             setIsScoreModalOpen(true);
             localStorage.removeItem('quizAnswers');
@@ -422,6 +454,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
+      if(isCorrections) return;
       const currentQs = questionsBySubject[activeSubject] || [];
       const currentQNum = currentQuestionsBySubject[activeSubject] || 1;
       const thisQuestion = currentQs[currentQNum - 1];
@@ -452,12 +485,21 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
   };
 
   const handleAnswerSelect = (option: string, questionId: string) => {
+    if(isCorrections) return;
     const optionIndex = currentQ.options.indexOf(option);
     const answerLabel = ['a', 'b', 'c', 'd', 'e'][optionIndex];
     const currentQNum = currentQuestionsBySubject[activeSubject] || 1;
 
-    setAnsweredQuestions(prev => ({ ...prev, [currentQNum]: option }));
-    
+    // Update selectedAnswers for the current subject
+    setSelectedAnswers(prev => ({
+      ...prev,
+      [activeSubject]: {
+        ...(prev[activeSubject] || {}),
+        [questionId]: option,
+      },
+    }));
+
+    // Update storedAnswers for submission
     setStoredAnswers(prev => {
       const newAnswers = prev.filter(ans => ans.questionId !== questionId);
       return [...newAnswers, { questionId, answer: answerLabel }];
@@ -465,10 +507,13 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
 
     const currentQs = questionsBySubject[activeSubject] || [];
     if (currentQNum < currentQs.length) {
-      setCurrentQuestionsBySubject(prev => ({
-        ...prev,
-        [activeSubject]: currentQNum + 1
-      }));
+      // Add 0.2-second delay before moving to next question
+      setTimeout(() => {
+        setCurrentQuestionsBySubject(prev => ({
+          ...prev,
+          [activeSubject]: currentQNum + 1
+        }));
+      }, 200); // 200 milliseconds = 0.2 second
     }
   };
 
@@ -495,9 +540,47 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
 
   const getButtonColor = (questionNum: number) => {
     const currentQNum = currentQuestionsBySubject[activeSubject] || 1;
-    if (answeredQuestions[questionNum]) return 'bg-green-500';
+    const currentQs = questionsBySubject[activeSubject] || [];
+    const questionId = currentQs[questionNum - 1]?.id;
+    if (selectedAnswers[activeSubject]?.[questionId]) return 'bg-green-500';
     if (questionNum === currentQNum) return 'bg-blue-600';
     return 'bg-red-500';
+  };
+
+  // LaTeX parsing function
+  const parseLatexQuestion = (text: string) => {
+    const inlineRegex = /\\\((.*?)\\\)/g; // Matches \( ... \)
+    const blockRegex = /\\\[(.*?)\\\]/g;  // Matches \[ ... \]
+    const generalRegex = /(\\begin{.*?}.*?\\end{.*?}|\\frac{.*?}{.*?})/g; // Matches complex LaTeX
+
+    if (text.match(blockRegex)) {
+      const parts = text.split(blockRegex).filter(Boolean);
+      return parts.map((part, index) => {
+        if (part.match(blockRegex)) {
+          const mathContent = part.replace(/\\\[(.*?)\\\]/, "$1").trim();
+          return <BlockMath key={index} math={mathContent} />;
+        }
+        return parseInlineLatex(part, index);
+      });
+    }
+
+    return parseInlineLatex(text, 0);
+  };
+
+  const parseInlineLatex = (text: string, baseIndex: number) => {
+    const inlineRegex = /\\\((.*?)\\\)/g;
+    const generalRegex = /(\\begin{.*?}.*?\\end{.*?}|\\frac{.*?}{.*?})/g;
+    const parts = text.split(inlineRegex).filter(Boolean);
+    return parts.map((part, index) => {
+      if (part.match(inlineRegex)) {
+        const mathContent = part.replace(/\\\((.*?)\\\)/, "$1").trim();
+        return <InlineMath key={`${baseIndex}-${index}`} math={mathContent} />;
+      }
+      if (part.match(generalRegex)) {
+        return <InlineMath key={`${baseIndex}-${index}`} math={part.trim()} />;
+      }
+      return <span key={`${baseIndex}-${index}`}>{part} </span>;
+    });
   };
 
   const toggleMode = () => setIsDarkMode((prev) => !prev);
@@ -507,9 +590,11 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
       ...prev,
       [subject]: prev[subject] || 1
     })); 
-    setAnsweredQuestions({}); 
   };
   const handleSubmitClick = () => {
+    if(isCorrections) {
+      return
+    }
     setIsCalculatorVisible(false); 
     setIsConfirmModalOpen(true);
   };
@@ -520,12 +605,13 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
       return;
     }
     setIsConfirmModalOpen(false);
-    
-    const isCompleted = await finishJambExam(examId, storedAnswers);
+    let questionIds = Object.values(questionsBySubject).flat().map(q => q.id);
+    const isCompleted = await finishJambExam(examId, storedAnswers,questionIds);
     if (isCompleted) {
       setIsScoreModalOpen(true);
       localStorage.removeItem('quizAnswers');
       setStoredAnswers([]);
+      setSelectedAnswers({}); // Reset selected answers on submission
     } else {
       setError('Failed to complete the exam');
     }
@@ -535,7 +621,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
 
   const resetQuizState = () => {
     setLoading(true);
-    setAnsweredQuestions({});
+    setSelectedAnswers({});
     setStoredAnswers([]);
     setCurrentQuestionsBySubject({});
     setExamId(null);
@@ -567,6 +653,10 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
   const currentQuestions = questionsBySubject[activeSubject] || [];
   const currentQ = currentQuestions[(currentQuestionsBySubject[activeSubject] || 1) - 1];
 
+  // Dynamic question number splitting
+  const totalQuestions = currentQuestions.length;
+  const questionsPerLine = Math.ceil(totalQuestions / 2); // Split into two equal (or nearly equal) lines
+
   if (!isMounted) return null;
   if (loading || !Object.keys(questionsBySubject).length) return <div className='min-h-screen w-full'><SkeletonLoader isDarkMode={false}/></div>;
   if (error) return <div>Error: {error}</div>;
@@ -597,8 +687,11 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
               </div>
             </div>
             <div className="flex ml-56 mt-4 md:items-center space-x-6">
-              <div className="text-red-500 font-semibold mt-2 text-lg">{formatTime(timeLeft)}</div>
-              <button onClick={handleSubmitClick} className="bg-[#11479b] mr-6 text-white px-4 py-2 rounded-lg">SUBMIT</button>
+             {!isCorrections && <div className="text-red-500 font-semibold mt-2 text-lg">{formatTime(timeLeft)}</div>}
+             {!isCorrections && <button onClick={handleSubmitClick} className="bg-[#11479b] mr-6 text-white px-4 py-2 rounded-lg">SUBMIT</button>}
+             <Link href="/">
+             {isCorrections && <button className='bg-[#11479b] mr-6 text-white px-4 py-2 rounded-lg'>Home</button>}
+              </Link>
             </div>
           </div>
           <div className={`w-full border-t mb-4 ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`}></div>
@@ -626,6 +719,7 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
           selectedSubjects={selectedSubjects}
           startJambExam={startJambExam}
           resetQuizState={resetQuizState}
+          setIsCorrections={setIsCorrections}
         />
 
         {isImageModalOpen && selectedImageUrl && (
@@ -661,68 +755,137 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
             </div>
           </div>
 
-          {currentQ && (
-            <>
-              <div className="mb-6 flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center mb-2">
-                    <span className="bg-[#11479b] text-white rounded-full w-12 h-12 flex items-center justify-center mr-2 font-bold">{currentQuestionsBySubject[activeSubject] || 1}</span>
-                    <div className={isDarkMode ? 'text-white' : 'text-gray-800'}>
-                      <ReactMarkdown>{currentQ.question}</ReactMarkdown>
-                    </div>
-                  </div>
-                  {currentQ.imageUrl && (
-                    <div className="flex justify-center">
-                      <div
-                        className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center cursor-pointer"
-                        onClick={() => handleImageClick(currentQ.imageUrl!)}
-                      >
-                        <img
-                          src={currentQ.imageUrl}
-                          alt="Question Image"
-                          className="object-cover w-full h-full"
-                        />
+          {currentQuestions.length > 0 && (
+            <div className={`flex ${currentQuestions.length === 2 ? 'flex-row gap-6' : 'flex-col'}`}>
+              {currentQuestions.map((question, qIndex) => {
+                const currentQNum = currentQuestionsBySubject[activeSubject] || 1;
+                const isCurrent = qIndex + 1 === currentQNum;
+
+                if (!isCurrent && currentQuestions.length !== 2) return null;
+
+                return (
+                  <div key={question.id} className={currentQuestions.length === 2 ? 'flex-1' : 'w-full'}>
+                    <div className="mb-6 flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          <span className="bg-[#11479b] text-white rounded-full w-12 h-12 flex items-center justify-center mr-2 font-bold">{qIndex + 1}</span>
+                          <div className={isDarkMode ? 'text-white' : 'text-gray-800'}>
+                            <p className="flex flex-col items-start">{parseLatexQuestion(question.question)}</p>
+                          </div>
+                        </div>
+                        {question.imageUrl && (
+                          <div className="flex justify-center">
+                            <div
+                              className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center cursor-pointer"
+                              onClick={() => handleImageClick(question.imageUrl!)}
+                            >
+                              <img
+                                src={question.imageUrl}
+                                alt="Question Image"
+                                className="object-cover w-full h-full"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-2 md:gap-4 md:mb-6 lg:mb-6 lg:gap-4">
-                {currentQ.options.map((option, index) => {
-                  const optionLabels = ['a', 'b', 'c', 'd', 'e'];
-                  const optionLabel = optionLabels[index] || '';
-                  return (
-                    <button
-                      key={option}
-                      onClick={() => handleAnswerSelect(option, currentQ.id)}
-                      className={`border rounded-lg p-4 py-3 h-12 text-left flex items-center ${
-                        isDarkMode ? 'border-gray-700' : 'border-gray-300'
-                      } ${
-                        answeredQuestions[currentQuestionsBySubject[activeSubject] || 1] === option
-                          ? 'bg-blue-200 dark:bg-blue-700'
-                          : isDarkMode
-                          ? 'bg-gray-800'
-                          : 'bg-white'
-                      } ${isDarkMode ? 'text-white' : 'text-gray-800'}`}
-                    >
-                      <span className="mr-2 font-semibold">{optionLabel}.</span>
-                      <ReactMarkdown>{option}</ReactMarkdown>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
+                    {!isCorrections? (<div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-2 md:gap-4 md:mb-6 lg:mb-6 lg:gap-4">
+                      {question.options.map((option, index) => {
+                        // const optionLabels = ['a', 'b', 'c', 'd', 'e'];
+                        // const optionLabel = optionLabels[index] || '';
+                        const isSelected = selectedAnswers[activeSubject]?.[question.id] === option;
+                        return (
+                          <button
+                            key={option}
+                            onClick={() => handleAnswerSelect(option, question.id)}
+                            className={`border rounded-lg p-4 py-3 h-12 text-left flex items-center ${
+                              isDarkMode ? 'border-gray-700' : 'border-gray-300'
+                            } ${
+                              isSelected
+                                ? 'bg-blue-200 dark:bg-blue-700'
+                                : isDarkMode
+                                ? 'bg-gray-800'
+                                : 'bg-white'
+                            } ${isDarkMode ? 'text-white' : 'text-gray-800'}`}
+                          >
+                            {/* <span className="mr-2 font-semibold">{optionLabel}.</span> */}
+                            <span>{parseLatexQuestion(option)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>):(
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-2 md:gap-4 md:mb-6 lg:mb-6 lg:gap-4">
+                    {question.options.map((option, index) => {
+                      // Find correction for current question if it exists
+                      const correction = corrections.find(c => c.questionId === question.id);
+                      
+                      // Check if this option is the student's answer or the correct answer
+                      // Use only the first index of studentAnswer if it exists and is an array
+                      const isStudentAnswer = correction?.studentAnswer 
+                        ? (Array.isArray(correction.studentAnswer) 
+                            ? correction.studentAnswer[0]?.toLowerCase() === option.toLowerCase()
+                            : correction.studentAnswer.toLowerCase() === option.toLowerCase())
+                        : false;
+                      
+                      const isCorrectAnswer = correction?.correctAnswer 
+                        ? correction.correctAnswer.toLowerCase() === option.toLowerCase()
+                        : false;
+                      
+                      // Determine the background color based on conditions
+                      let bgColorClass = '';
+                      
+                      if (correction) {
+                        // We're in review mode (corrections exist)
+                        if (isStudentAnswer && isCorrectAnswer) {
+                          // Student answered correctly - green
+                          bgColorClass = isDarkMode ? 'bg-green-700' : 'bg-green-200';
+                        } else if (isStudentAnswer && !isCorrectAnswer) {
+                          // Student chose this but it's wrong - red
+                          bgColorClass = isDarkMode ? 'bg-red-600' : 'bg-red-200';
+                        } else if (isCorrectAnswer) {
+                          // This is the correct answer (but student chose something else) - green
+                          bgColorClass = isDarkMode ? 'bg-green-600' : 'bg-green-100';
+                        } else {
+                          // Regular unselected option in review mode
+                          bgColorClass = isDarkMode ? 'bg-gray-800' : 'bg-white';
+                        }
+                      } else {
+                        // We're in question answering mode (no corrections yet)
+                        const isSelected = selectedAnswers[activeSubject]?.[question.id] === option;
+                        bgColorClass = isSelected
+                          ? (isDarkMode ? 'bg-blue-700' : 'bg-blue-200')
+                          : (isDarkMode ? 'bg-gray-800' : 'bg-white');
+                      }
+                      
+                      return (
+                        <button
+                          key={option}
+                          onClick={() => handleAnswerSelect(option, question.id)}
+                          className={`border rounded-lg p-4 py-3 h-12 text-left flex items-center ${
+                            isDarkMode ? 'border-gray-700' : 'border-gray-300'
+                          } ${bgColorClass} ${isDarkMode ? 'text-white' : 'text-gray-800'} transition-colors duration-200`}
+                        >
+                          <span>{parseLatexQuestion(option)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
         {isCalculatorVisible && <FloatingCalculator />}
-        <div className="mt-20 md:flex">
+        <div className="mt-20 md:">
           <div className="relative">
             {/* Question Numbers Container */}
             <div className="max-w-[100vw] overflow-x-auto scrollbar-hide md:max-w-full md:overflow-x-visible lg:max-w-full lg:overflow-x-visible">
-              <div className="flex flex-col md:flex-row md:flex-wrap lg:flex-row lg:flex-wrap gap-y-2">
-                {/* First Line  */}
-                <div className="flex space-x-2 md:w-full lg:w-full">
-                  {Array.from({ length: Math.min(currentQuestions.length, 25) }, (_, index) => index + 1).map((questionNum) => (
+              <div className="flex flex-col gap-y-2">
+                {/* First Line */}
+                <div className="flex space-x-2">
+                  {Array.from({ length: Math.min(totalQuestions, questionsPerLine) }, (_, index) => index + 1).map((questionNum) => (
                     <button
                       key={questionNum}
                       onClick={() => handleQuestionClick(questionNum)}
@@ -733,9 +896,9 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
                   ))}
                 </div>
                 {/* Second Line */}
-                {currentQuestions.length > 25 && (
-                  <div className="flex space-x-2 md:w-full lg:w-full">
-                    {Array.from({ length: Math.min(currentQuestions.length - 25, 25) }, (_, index) => index + 26).map((questionNum) => (
+                {totalQuestions > questionsPerLine && (
+                  <div className="flex space-x-2">
+                    {Array.from({ length: totalQuestions - questionsPerLine }, (_, index) => index + questionsPerLine + 1).map((questionNum) => (
                       <button
                         key={questionNum}
                         onClick={() => handleQuestionClick(questionNum)}
@@ -748,7 +911,6 @@ const Quiz = ({yearParam, subjectsParam}:{yearParam: string | string[] | undefin
                 )}
               </div>
             </div>
-
           </div>
 
           {/* Prev/Next Buttons */}
