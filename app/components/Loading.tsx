@@ -11,7 +11,7 @@ const MulticolorSpinner = ({
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentColorIndex((prevIndex) => (prevIndex + 1) % colors.length);
-    }, 1000); // Change color every second
+    }, 500); // Change color 500 millisecond
 
     return () => clearInterval(interval);
   }, []);

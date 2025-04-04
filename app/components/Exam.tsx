@@ -233,9 +233,10 @@ const ExamGrid = () => {
             </div>
             <h2 className="text-2xl font-bold text-waec mb-2">WAEC</h2>        
             <p className="text-gray-600 text-center">Leaderboard</p>
-            <p className="text-red-500 font-bold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">Coming Soon</p>
-          </div>
-
+            <p className="text-red-500 font-bold absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">
+            <Image src="/stamp.png" alt="Placeholder" width={300} height={300} />
+            </p>          
+            </div>
           <div
             className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-green-500 w-full md:w-80 h-64 flex flex-col items-center justify-center relative"
             onClick={() => setIsWaecModalOpen(false)}
@@ -245,7 +246,9 @@ const ExamGrid = () => {
             </div>
             <h2 className="text-2xl font-bold text-waec mb-2">WAEC</h2>
             <p className="text-gray-600 text-center">West African Examinations Council</p>
-            <p className="text-red-500 font-bold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">Coming Soon</p>
+            <p className="text-red-500 font-bold absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">
+            <Image src="/stamp.png" alt="Placeholder" width={300} height={300} />
+            </p>
           </div>
         </div>
 
