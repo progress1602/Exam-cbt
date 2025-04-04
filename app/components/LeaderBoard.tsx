@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChevronDown, ChevronUp, Search, ArrowUpDown, User, BookOpen, GraduationCap } from "lucide-react"
+import Loading from "./Loading"
 
 type SubjectScore = {
   subject: string
@@ -145,7 +146,7 @@ export function Leaderboard() {
 
   // Loading and error states
   if (loading) {
-    return <div className="text-center py-8">Loading leaderboard...</div>
+    return <div className="text-center py-8 mt-56 md:mt-56"><Loading/></div>
   }
 
   if (error) {

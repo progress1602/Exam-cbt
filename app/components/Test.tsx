@@ -703,9 +703,9 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
                 <button onClick={toggleMode}>{isDarkMode ? <Sun className="text-yellow-400 w-5 h-5" /> : <Moon className="text-gray-700 w-5 h-5" />}</button>
               </div>
             </div>
-            <div className="flex ml-56 mt-4 md:items-center space-x-6">
+            <div className="flex ml-40 mt-4 md:items-center space-x-6">
              {!isCorrections && <div className="text-red-500 font-semibold mt-2 text-lg">{formatTime(timeLeft)}</div>}
-             {!isCorrections && <button onClick={handleSubmitClick} className="bg-[#11479b] mr-6 text-white px-4 py-2 rounded-lg">SUBMIT</button>}
+             {!isCorrections && <button onClick={handleSubmitClick} className="bg-[#11479b] mr-6 text-white px-4 py-2 rounded-bl-md">SUBMIT</button>}
              <Link href="/">
              {isCorrections && <button className='bg-[#11479b] mr-6 text-white px-4 py-2 rounded-lg'>Home</button>}
               </Link>
@@ -718,7 +718,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
           <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-xs bg-opacity-30">
             <div className={`rounded-lg p-6 ${isDarkMode ? 'bg-[#333333] text-white' : 'bg-white text-gray-800'} w-96 shadow-xl`}>
               <h2 className="text-xl font-bold mb-4">Confirm Submission</h2>
-              <p className="mb-6">Do you want to submit your exam now?</p>
+              <p className="mb-6">Do you want to submit your exam now? Are you sure all subjects are answered completely</p>
               <div className="flex justify-end space-x-4">
                 <button onClick={handleCancel} className={`px-4 py-2 rounded-lg ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600 text-white'}`}>Cancel</button>
                 <button onClick={handleProceed} className="bg-[#11479b] text-white px-4 py-2 rounded-lg hover:bg-[#0d3a7d]">Proceed</button>
@@ -785,7 +785,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
                     <div className="mb-6 flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center mb-2">
-                          <span className="bg-[#11479b] text-white rounded-full w-12 h-12 flex items-center justify-center mr-2 font-bold">{qIndex + 1}</span>
+                          <span className="bg-[#11479b] text-white rounded-full w-12 h-12 flex items-center justify-center mr-2 font-bold shrink-0">{qIndex + 1}</span>
                           <div className={isDarkMode ? 'text-white' : 'text-gray-800'}>
                             <p className="flex flex-col items-start">{parseLatexQuestion(question.question)}</p>
                           </div>
@@ -873,6 +873,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
                           ? (isDarkMode ? 'bg-blue-700' : 'bg-blue-200')
                           : (isDarkMode ? 'bg-gray-800' : 'bg-white');
                       }
+                      
                       
                       return (
                         <button
