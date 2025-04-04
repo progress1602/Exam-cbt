@@ -262,21 +262,26 @@ const ExamGrid = () => {
                     <p className="text-sm text-gray-500">Loading subjects...</p>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {jambSubjects.map((subject) => (
-                        <div key={subject.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`jamb-${subject.id}`}
-                            checked={selectedSubjects.includes(subject.name)}
-                            onCheckedChange={() => handleSubjectChange(subject.name, true)}
-                            disabled={subject.name.toLowerCase() === "english language"}
-                            className={`data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 ${subject.name.toLowerCase() === "english language" ? "bg-blue-500 text-white border-blue-500" : ""}`}
-                          />
-                          <Label htmlFor={`jamb-${subject.id}`} className="text-sm">
-                            {capitalizeFirstLetter(subject.name)}
-                            {subject.name.toLowerCase() === "english language" && " (Compulsory)"}
-                          </Label>
-                        </div>
-                      ))}
+                      {jambSubjects
+                        .filter((subject, index, self) => 
+                          subject.name.toLowerCase() !== "english language" || 
+                          self.findIndex(s => s.name.toLowerCase() === "english language") === index
+                        )
+                        .map((subject) => (
+                          <div key={subject.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`jamb-${subject.id}`}
+                              checked={selectedSubjects.includes(subject.name)}
+                              onCheckedChange={() => handleSubjectChange(subject.name, true)}
+                              disabled={subject.name.toLowerCase() === "english language"}
+                              className={`data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 ${subject.name.toLowerCase() === "english language" ? "bg-blue-500 text-white border-blue-500" : ""}`}
+                            />
+                            <Label htmlFor={`jamb-${subject.id}`} className="text-sm">
+                              {capitalizeFirstLetter(subject.name)}
+                              {subject.name.toLowerCase() === "english language" && " (Compulsory)"}
+                            </Label>
+                          </div>
+                        ))}
                     </div>
                   )}
                 </div>
@@ -333,21 +338,26 @@ const ExamGrid = () => {
                 <div>
                   <h3 className="text-sm font-medium mb-3">Subjects (Select up to 8 subjects + English)</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {waecSubjects.map((subject) => (
-                      <div key={subject} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`waec-${subject}`}
-                          checked={selectedSubjects.includes(subject)}
-                          onCheckedChange={() => handleSubjectChange(subject, false)}
-                          disabled={subject === "english language"}
-                          className={`data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 ${subject === "english language" ? "bg-green-500 text-white border-green-500" : ""}`}
-                        />
-                        <Label htmlFor={`waec-${subject}`} className="text-sm">
-                          {capitalizeFirstLetter(subject)}
-                          {subject === "english language" && " (Compulsory)"}
-                        </Label>
-                      </div>
-                    ))}
+                    {waecSubjects
+                      .filter((subject, index, self) => 
+                        subject !== "english language" || 
+                        self.indexOf("english language") === index
+                      )
+                      .map((subject) => (
+                        <div key={subject} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`waec-${subject}`}
+                            checked={selectedSubjects.includes(subject)}
+                            onCheckedChange={() => handleSubjectChange(subject, false)}
+                            disabled={subject === "english language"}
+                            className={`data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 ${subject === "english language" ? "bg-green-500 text-white border-green-500" : ""}`}
+                          />
+                          <Label htmlFor={`waec-${subject}`} className="text-sm">
+                            {capitalizeFirstLetter(subject)}
+                            {subject === "english language" && " (Compulsory)"}
+                          </Label>
+                        </div>
+                      ))}
                   </div>
                 </div>
 
