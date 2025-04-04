@@ -28,7 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-         <div className="text-white bg-white dark: dark:bg-black  text-2xl md:text-3xl lg:text-3xl flex items-center justify-center">Cloudnotte Jamb CBT</div>
+         {/* <div className="text-white bg-white dark: dark:bg-black  text-2xl md:text-3xl lg:text-3xl flex items-center justify-center">Cloudnotte Jamb CBT</div> */}
         {children}
         <Toaster position="top-right" richColors/>
       </body>
