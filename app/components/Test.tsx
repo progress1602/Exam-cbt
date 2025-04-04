@@ -6,6 +6,7 @@ import { Moon, Sun, Eye, Calculator, Edit, RotateCcw, X } from 'lucide-react';
 import domtoimage from 'dom-to-image';
 import FloatingCalculator from './FloatingCalculator';
 import SkeletonLoader from './SkeletonLoader';
+import Loading from './Loading';
 import { BlockMath, InlineMath } from "react-katex"; 
 import "katex/dist/katex.min.css";
 import Link from 'next/link';
@@ -127,7 +128,6 @@ const EnhancedScoreGridModal = ({
 
   const handleRewrite = async () => {
     resetQuizState();
-
     await startJambExam();
     onClose();
   };
@@ -212,6 +212,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
   const [isCalculatorVisible, setIsCalculatorVisible] = useState(true);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission loading
 
   const selectedSubjects = JSON.parse(subjectsParam as string || '[]').map(normalizeSubjectName);
   const selectedYear = yearParam || '2023';
@@ -404,7 +405,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
       }else{
         startJambExam();
       }
-    }
+    }  
      
   }, []);
 
@@ -613,8 +614,9 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
       return;
     }
     setIsConfirmModalOpen(false);
+    setIsSubmitting(true); // Show loader when submission starts
     let questionIds = Object.values(questionsBySubject).flat().map(q => q.id);
-    const isCompleted = await finishJambExam(examId, storedAnswers,questionIds);
+    const isCompleted = await finishJambExam(examId, storedAnswers, questionIds);
     if (isCompleted) {
       setIsScoreModalOpen(true);
       localStorage.removeItem('quizAnswers');
@@ -623,6 +625,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
     } else {
       setError('Failed to complete the exam');
     }
+    setIsSubmitting(false); // Hide loader when submission is complete
   };
 
   const handleCancel = () => setIsConfirmModalOpen(false);
@@ -673,6 +676,12 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 ${isDarkMode ? 'bg-[#191919] dark' : 'bg-gray-100'}`}>
+      {/* Show SkeletonLoader during submission */}
+      {isSubmitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50 backdrop-blur-sm">
+          <Loading />
+        </div>
+      )}
       <div className="w-full rounded-lg p-6">
         <div className={`fixed top-3 left-0 right-0 z-10 ${isDarkMode ? 'bg-[#191919]/80' : 'bg-gray-100/80'} backdrop-blur-md`}>
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 px-4 py-2">
