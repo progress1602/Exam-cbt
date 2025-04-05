@@ -100,11 +100,11 @@ const LoginPage = () => {
           <div className="h-full flex flex-col justify-center">
             <div className="mb-4">
               <h1 className="text-3xl font-bold text-gray-800 mb-1">
-                Exam Practice With Ease
+               Practice With Ease
               </h1>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4 text-center">
-                Login to your account
-              </h2>
+              <h2 className="text-2xl gap-1 font-semibold flex text-gray-800 mb-4 md:flex md:items-center md:justify-center sm:static">
+                Powered by <Image src="/logo.png" alt="Logo" width={110} height={50}  className='mt-1'/>
+              </h2>           
 
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>

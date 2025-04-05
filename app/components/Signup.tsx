@@ -127,15 +127,14 @@ const LoginPage = () => {
         </div>
         
         <div className="w-full md:w-1/2 p-8 flex flex-col justify-center">
-          <div className="mb-4">
-            <h1 className="text-3xl font-bold text-gray-800 mb-1">Exam Practice With Ease</h1>
-            {/* Move the header inside the scrollable container for sm and below */}
+          <div className="mb-4 overflow-y-auto scrollbar-hide">
+            <h1 className="text-3xl font-bold text-gray-800 mb-1">Practice With Ease</h1>
             <div className="space-y-3">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4 md:flex md:items-center md:justify-center sm:static">
-                Sign up to your account.
+              <h2 className="text-2xl gap-1 font-semibold flex text-gray-800 mb-4 md:flex md:items-center md:justify-center sm:static">
+                Powered by <Image src="/logo.png" alt="Logo" width={110} height={50}  className='mt-1'/>
               </h2>
               
-              <form className="space-y-3 max-h-[400px] overflow-y-auto" onSubmit={(e) => e.preventDefault()}>
+              <form className="space-y-3 max-h-[400px] " onSubmit={(e) => e.preventDefault()}>
                 <div>
                   <p className='mb-2 ml-1 flex'>Full Name <p className='text-red-800 h-4 w-4 mt- ml-1'>*</p> </p>   
                   <input 
