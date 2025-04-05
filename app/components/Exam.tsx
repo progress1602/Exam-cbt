@@ -35,7 +35,7 @@ const ExamGrid = () => {
   ];
 
   const waecYears = Array.from({ length: 20 }, (_, i) => (2024 - i).toString());
-  const API_URL = "https://exam-1-iev5.onrender.com/graphql";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
   useEffect(() => {
     const fetchUserData = async () => {

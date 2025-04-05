@@ -31,6 +31,7 @@ interface QuestionDetails {
 }
 
 const normalizeSubjectName = (subject: string) => subject.trim().toUpperCase();
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 const EnhancedScoreGridModal = ({
   isOpen,
@@ -65,7 +66,7 @@ const EnhancedScoreGridModal = ({
           ...(token && { 'Authorization': `Bearer ${token}` }),
         };
 
-        const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
+        const response = await fetch(API_URL, {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -229,7 +230,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -279,7 +280,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
 
       const groupedQuestions: { [key: string]: Question[] } = {};
       for (const subject of subjectsToFetch) {
-        const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
+        const response = await fetch(API_URL, {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -329,7 +330,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers,
         body: JSON.stringify({
