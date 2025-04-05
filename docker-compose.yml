@@ -1,0 +1,13 @@
+services:
+  exam-prep:
+    container_name: exam-prep
+    image: node:20-alpine
+    command: ['sh', '-c', 'npm install && npm run build && npm run start']
+    working_dir: /app
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    volumes:
+      - ./:/app
+    ports:
+      - '4021:3000'
+    restart: always
