@@ -33,6 +33,7 @@ const LoginPage = () => {
 
     const [firstName, ...lastNameParts] = formData.fullName.split(' ');
     const lastName = lastNameParts.join(' ') || ' ';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
     const mutation = `
       mutation {
@@ -59,7 +60,7 @@ const LoginPage = () => {
     `;
 
     try {
-      const response = await fetch('https://exam-1-iev5.onrender.com/graphql', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

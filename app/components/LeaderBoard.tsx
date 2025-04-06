@@ -33,12 +33,13 @@ export function Leaderboard() {
   const [viewMode, setViewMode] = useState<"table" | "cards">("table")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
  
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const response = await fetch("https://exam-1-iev5.onrender.com/graphql", {
+        const response = await fetch(API_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

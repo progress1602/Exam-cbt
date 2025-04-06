@@ -13,6 +13,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
   // ✅ Redirect to / if token exists
   useEffect(() => {
@@ -51,7 +52,7 @@ const LoginPage = () => {
     };
   
     try {
-      const response = await fetch("https://exam-1-iev5.onrender.com/graphql", {
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
