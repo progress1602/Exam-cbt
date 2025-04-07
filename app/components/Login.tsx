@@ -103,7 +103,7 @@ const LoginPage = () => {
               <h1 className="text-3xl font-bold text-gray-800 mb-1">
                Practice With Ease
               </h1>
-              <h2 className="text-2xl gap-1 font-semibold flex text-gray-800 mb-4 md:flex md:items-center md:justify-center sm:static">
+              <h2 className="text-2xl gap-1 font-semibold flex text-gray-800 mb-4 md:flex md:items-start md:justify-start ">
                 Powered by <Image src="/logo.png" alt="Logo" width={110} height={50}  className='mt-1'/>
               </h2>           
 
