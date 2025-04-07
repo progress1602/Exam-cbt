@@ -15,10 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Cloudnotte Jamb CBT",
-  icons: {
-    icon: "/logo.ico",
-  },
-  description: "Prepare for your JAMB exams with Cloudnotte CBT",
+  description: "Prepare for your Exams with ease using Cloudnotte CBT Practice",
 };
 
 export default function RootLayout({

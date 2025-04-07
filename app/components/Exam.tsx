@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useRouter } from 'next/navigation'; // Updated import
+import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -24,9 +24,9 @@ const ExamGrid = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [jambSubjects, setJambSubjects] = useState<{ id: string; name: string }[]>([]);
   const [jambYears, setJambYears] = useState<string[]>([]);
-  const [user, setUser] = useState<{ firstName: string; lastName: string; userName: string } | null>(null); 
+  const [user, setUser] = useState<{ firstName: string; lastName: string; userName: string } | null>(null);
 
-  const router = useRouter(); 
+  const router = useRouter();
 
   const waecSubjects = [
     "english language", "mathematics", "physics", "chemistry", "biology",
@@ -42,10 +42,10 @@ const ExamGrid = () => {
       try {
         const response = await fetch(API_URL, {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
-            ...(localStorage.getItem('token') && { 
-              'Authorization': `Bearer ${localStorage.getItem('token')}` 
+            ...(localStorage.getItem('token') && {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
             }),
           },
           body: JSON.stringify({
@@ -73,8 +73,8 @@ const ExamGrid = () => {
           });
         } else {
           toast.error("Failed to fetch user data");
-          localStorage.removeItem('token'); // Clear token if user data fetch fails
-          router.push("/login"); // Redirect to login page
+          localStorage.removeItem('token');
+          router.push("/login");
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -86,10 +86,12 @@ const ExamGrid = () => {
       try {
         const response = await fetch(API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          ...(localStorage.getItem('token') && { 
-            'Authorization': `Bearer ${localStorage.getItem('token')}` 
-          }),
+          headers: {
+            "Content-Type": "application/json",
+            ...(localStorage.getItem('token') && {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }),
+          },
           body: JSON.stringify({
             query: `query { subjects(examType: "jamb") { id name } }`,
           }),
@@ -111,10 +113,12 @@ const ExamGrid = () => {
       try {
         const response = await fetch(API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          ...(localStorage.getItem('token') && { 
-            'Authorization': `Bearer ${localStorage.getItem('token')}` 
-          }),
+          headers: {
+            "Content-Type": "application/json",
+            ...(localStorage.getItem('token') && {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }),
+          },
           body: JSON.stringify({
             query: `query { years(examType: "jamb", examSubject: "english language") }`,
           }),
@@ -132,10 +136,10 @@ const ExamGrid = () => {
       }
     };
 
-    fetchUserData(); 
+    fetchUserData();
     fetchJambSubjects();
     fetchJambYears();
-  }, []);
+  }, [router]);
 
   const handleSubjectChange = (subject: string, isJamb: boolean) => {
     if (subject === "english language") return;
@@ -159,7 +163,7 @@ const ExamGrid = () => {
     setSelectedYear(year);
   };
 
-  const handleStartPractice = (isJamb: boolean, isCompetition?:boolean) => {
+  const handleStartPractice = (isJamb: boolean, isCompetition?: boolean) => {
     if (!selectedYear && !isCompetition) {
       toast.error("Please select a year");
       return;
@@ -174,13 +178,21 @@ const ExamGrid = () => {
     setTimeout(() => {
       setIsLoading(false);
       toast.success(`Starting practice for ${selectedSubjects.map(capitalizeFirstLetter).join(", ")} - ${selectedYear}`);
-      // Navigate programmatically only if conditions are met
-      if(isCompetition) {
+      if (isCompetition) {
         router.push(`/test?subjects=${encodeURIComponent(JSON.stringify(selectedSubjects))}&year=${encodeURIComponent(selectedYear || '')}&competition=true`);
-      }else { 
-      router.push(`/test?subjects=${encodeURIComponent(JSON.stringify(selectedSubjects))}&year=${encodeURIComponent(selectedYear || '')}`);
+      } else {
+        router.push(`/test?subjects=${encodeURIComponent(JSON.stringify(selectedSubjects))}&year=${encodeURIComponent(selectedYear || '')}`);
       }
     }, 2000);
+  };
+
+  const handleWaecClick = () => {
+    toast("Work In Progress Coming Soon", {
+      style: {
+        color: '#22c55e',
+        fontSize: '16px',
+      },
+    });
   };
 
   return (
@@ -202,14 +214,13 @@ const ExamGrid = () => {
         {/* JAMB Section */}
         <div className="flex flex-col md:flex-row justify-center space-y-6 md:space-y-0 md:space-x-8">
           <Link href="/leaderboard">
-          <div
-            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-blue-500 w-full md:w-80 h-64 flex flex-col items-center justify-center">
-            <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4">
-              <Image src="/leader.jpg" alt="JAMB Logo" width={100} height={100} className="object-contain" />
+            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-blue-500 w-full md:w-80 h-64 flex flex-col items-center justify-center">
+              <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4">
+                <Image src="/leader.jpg" alt="JAMB Logo" width={100} height={100} className="object-contain" />
+              </div>
+              <h2 className="text-2xl font-bold text-jamb mb-2">JAMB</h2>
+              <p className="text-gray-600 text-center">Leaderboard</p>
             </div>
-            <h2 className="text-2xl font-bold text-jamb mb-2">JAMB</h2>
-            <p className="text-gray-600 text-center">Leaderboard</p>
-          </div>
           </Link>
 
           <div
@@ -226,29 +237,26 @@ const ExamGrid = () => {
 
         {/* WAEC Section */}
         <div className="flex flex-col md:flex-row justify-center space-y-6 md:space-y-0 md:space-x-8">
-         <div
-            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-green-500 w-full md:w-80 h-64 flex flex-col items-center justify-center relative">
-            <div className="w-24 h-24 rounded-full  flex items-center justify-center mb-4">
+          <div
+            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-green-500 w-full md:w-80 h-64 flex flex-col items-center justify-center"
+            onClick={handleWaecClick}
+          >
+            <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4">
               <Image src="/leader.jpg" alt="WAEC Logo" width={100} height={100} className="object-contain" />
             </div>
-            <h2 className="text-2xl font-bold text-waec mb-2">WAEC</h2>        
+            <h2 className="text-2xl font-bold text-waec mb-2">WAEC</h2>
             <p className="text-gray-600 text-center">Leaderboard</p>
-            <p className="text-red-500 font-bold text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">
-            Coming soon
-            </p>          
-            </div>
+          </div>
+
           <div
-            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-green-500 w-full md:w-80 h-64 flex flex-col items-center justify-center relative"
-            onClick={() => setIsWaecModalOpen(false)}
+            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow cursor-pointer border-4 border-green-500 w-full md:w-80 h-64 flex flex-col items-center justify-center"
+            onClick={handleWaecClick}
           >
             <div className="w-16 h-16 rounded-full bg-green-300 flex items-center justify-center mb-4">
               <Image src="/waec.png" alt="WAEC Logo" width={70} height={70} className="object-contain" />
             </div>
             <h2 className="text-2xl font-bold text-waec mb-2">WAEC</h2>
             <p className="text-gray-600 text-center">West African Examinations Council</p>
-            <p className="text-red-500 font-bold text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-12">
-            Coming soon 
-            </p>
           </div>
         </div>
 
@@ -266,8 +274,8 @@ const ExamGrid = () => {
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {jambSubjects
-                        .filter((subject, index, self) => 
-                          subject.name.toLowerCase() !== "english language" || 
+                        .filter((subject, index, self) =>
+                          subject.name.toLowerCase() !== "english language" ||
                           self.findIndex(s => s.name.toLowerCase() === "english language") === index
                         )
                         .map((subject) => (
@@ -316,14 +324,14 @@ const ExamGrid = () => {
               <Button
                 className="bg-blue-500 hover:bg-blue-600 w-full"
                 disabled={isLoading || jambSubjects.length === 0 || jambYears.length === 0 || !selectedYear}
-                onClick={() => handleStartPractice(true,false)}
+                onClick={() => handleStartPractice(true, false)}
               >
                 {isLoading ? 'Loading...' : 'Start Practice'}
               </Button>
               <Button
                 className="bg-blue-500 hover:bg-blue-600 w-full mt-2"
                 disabled={isLoading || selectedSubjects.length !== 4 || selectedYear !== null}
-                onClick={() => handleStartPractice(true,true)}
+                onClick={() => handleStartPractice(true, true)}
               >
                 {isLoading ? 'Loading...' : 'Start Competition'}
               </Button>
@@ -342,8 +350,8 @@ const ExamGrid = () => {
                   <h3 className="text-sm font-medium mb-3">Subjects (Select up to 8 subjects + English)</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {waecSubjects
-                      .filter((subject, index, self) => 
-                        subject !== "english language" || 
+                      .filter((subject, index, self) =>
+                        subject !== "english language" ||
                         self.indexOf("english language") === index
                       )
                       .map((subject) => (
@@ -387,7 +395,7 @@ const ExamGrid = () => {
               <Button
                 className="bg-green-500 hover:bg-green-600 w-full"
                 disabled={isLoading || !selectedYear}
-                onClick={() => handleStartPractice(false)} // Pass false for WAEC
+                onClick={() => handleStartPractice(false)}
               >
                 {isLoading ? 'Loading...' : 'Start Practice'}
               </Button>

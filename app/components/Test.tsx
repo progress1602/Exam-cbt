@@ -320,7 +320,7 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
   };
 
   const finishJambExam = async (sessionId: string, answers: { questionId: string; answer: string }[],questionIds:string[]) => {
-    console.log(' questionIds:', questionIds);
+    // console.log(' questionIds:', questionIds);
     try {
       const token = localStorage.getItem('token');
       const headers: HeadersInit = {
@@ -851,15 +851,25 @@ const Quiz = ({yearParam, subjectsParam,compParam}:{yearParam: string | string[]
                       
                       // Determine the background color based on conditions
                       let bgColorClass = '';
-                      
                       if (correction) {
                         // We're in review mode (corrections exist)
-                        if (isStudentAnswer && isCorrectAnswer) {
+                        if(option.split(".")[0].toLowerCase() == correction?.studentAnswer) {
+                            bgColorClass =  correction?.studentAnswer !== correction?.correctAnswer.split(".")[0].toLowerCase() ? "bg-red-600" : ""
+
+                            if(correction.correctAnswer.split(".")[0].toLowerCase() == correction.studentAnswer) {
+                              bgColorClass = "bg-green-600"
+                            }
+                        } 
+                          
+                        // } else if (isStudentAnswer && !isCorrectAnswer) {
+                        //   // Student chose this but it's wrong - red
+                        //   bgColorClass = isDarkMode ? 'bg-red-600' : 'bg-red-200';
+
+                        else if (isStudentAnswer && isCorrectAnswer) {
                           // Student answered correctly - green
                           bgColorClass = isDarkMode ? 'bg-green-700' : 'bg-green-200';
-                        } else if (isStudentAnswer && !isCorrectAnswer) {
-                          // Student chose this but it's wrong - red
-                          bgColorClass = isDarkMode ? 'bg-red-600' : 'bg-red-200';
+                        // } else if (isStudentAnswer && !isCorrectAnswer) {
+                         
                         } else if (isCorrectAnswer) {
                           // This is the correct answer (but student chose something else) - green
                           bgColorClass = isDarkMode ? 'bg-green-600' : 'bg-green-100';
